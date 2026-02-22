@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(node_modules/.bin/tailwindcss:*)",
+      "Bash(\"/Users/khannmohsin/VSCode Projects/civicus/src/types/index.ts\":*)",
+      "Bash(\"/Users/khannmohsin/VSCode Projects/civicus/src/store/authStore.ts\":*)",
+      "Bash(\"/Users/khannmohsin/VSCode Projects/civicus/src/types/user.types.ts\":*)",
+      "Bash(\"/Users/khannmohsin/VSCode Projects/civicus/src/lib/constants.ts\":*)",
+      "Bash(\"/Users/khannmohsin/VSCode Projects/civicus/src/hooks/usePolicies.ts\":*)"
+    ]
+  }
+}
