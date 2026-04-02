@@ -18,6 +18,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_DATA_PROVIDER: supabase
+      VITE_ENABLE_MFA: false
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
     steps:
       - name: Checkout
@@ -44,6 +49,11 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Validate Supabase Build Secrets
+        run: |
+          test -n "$VITE_SUPABASE_URL" || (echo "Missing VITE_SUPABASE_URL GitHub secret" && exit 1)
+          test -n "$VITE_SUPABASE_ANON_KEY" || (echo "Missing VITE_SUPABASE_ANON_KEY GitHub secret" && exit 1)
 
       - name: Build
         run: npm run build
