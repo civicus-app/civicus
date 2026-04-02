@@ -4,14 +4,19 @@ import { BrowserRouter, HashRouter } from 'react-router-dom';
 import App from './App';
 import './styles/globals.css';
 
-const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '');
 const useHashRouter = import.meta.env.VITE_ROUTER_MODE === 'hash';
-const Router = useHashRouter ? HashRouter : BrowserRouter;
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Router basename={routerBasename}>
-      <App />
-    </Router>
+    {useHashRouter ? (
+      <HashRouter>
+        <App />
+      </HashRouter>
+    ) : (
+      <BrowserRouter basename={routerBasename}>
+        <App />
+      </BrowserRouter>
+    )}
   </React.StrictMode>
 );
