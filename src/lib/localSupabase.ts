@@ -413,7 +413,7 @@ const createSeedState = (): LocalState => {
   const profiles: Profile[] = [
     {
       id: adminId,
-      email: 'admin@civicus.local',
+      email: 'admin-profile@seed.local',
       full_name: 'Civicus Admin',
       role: 'admin',
       district_id: districtByName('Tromsoya').id,
@@ -425,7 +425,7 @@ const createSeedState = (): LocalState => {
     },
     {
       id: citizenId,
-      email: 'citizen@civicus.local',
+      email: 'alex.hansen@seed.local',
       full_name: 'Alex Hansen',
       role: 'citizen',
       district_id: districtByName('Fastlandet').id,
@@ -437,7 +437,7 @@ const createSeedState = (): LocalState => {
     },
     {
       id: citizen2Id,
-      email: 'resident@civicus.local',
+      email: 'mina.olsen@seed.local',
       full_name: 'Mina Olsen',
       role: 'citizen',
       district_id: districtByName('Kvaloya').id,
@@ -449,32 +449,7 @@ const createSeedState = (): LocalState => {
     },
   ];
 
-  const auth_users: LocalAuthUser[] = [
-    {
-      id: adminId,
-      email: 'admin@civicus.local',
-      password: 'admin12345',
-      full_name: 'Civicus Admin',
-      role: 'admin',
-      created_at: now,
-    },
-    {
-      id: citizenId,
-      email: 'citizen@civicus.local',
-      password: 'citizen12345',
-      full_name: 'Alex Hansen',
-      role: 'citizen',
-      created_at: now,
-    },
-    {
-      id: citizen2Id,
-      email: 'resident@civicus.local',
-      password: 'resident12345',
-      full_name: 'Mina Olsen',
-      role: 'citizen',
-      created_at: now,
-    },
-  ];
+  const auth_users: LocalAuthUser[] = [];
 
   const sentiment_votes: SentimentVote[] = [
     {

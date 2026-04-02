@@ -282,14 +282,6 @@ export default function Login() {
       ) : (
         <>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {DATA_PROVIDER === 'local' ? (
-              <div className="rounded-2xl border border-[#d8e0ee] bg-[#f8fbff] px-4 py-3 text-sm text-[#4f607a]">
-                <p className="font-medium text-[#24354c]">{tx('Lokale demo-brukere', 'Local demo users')}</p>
-                <p className="mt-1">admin@civicus.local / admin12345</p>
-                <p>citizen@civicus.local / citizen12345</p>
-              </div>
-            ) : null}
-
             {error ? (
               <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}

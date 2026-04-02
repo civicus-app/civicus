@@ -37,15 +37,11 @@ Set this in `.env.local`:
 VITE_DATA_PROVIDER=local
 ```
 
-You can then log in with seeded demo accounts:
-
-- `admin@civicus.local` / `admin12345`
-- `citizen@civicus.local` / `citizen12345`
-
 Local mode also includes:
 
 - admin invite code: `CIVICUS-ADMIN-ACCESS`
 - mocked OTP delivery directly in the auth UI for testing
+- direct signup for new local users
 
 All data persists in browser localStorage.
 

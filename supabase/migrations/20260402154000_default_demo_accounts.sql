@@ -12,7 +12,7 @@ declare
     'Citizen User'
   );
   resolved_role text := case
-    when lower(resolved_email) in ('admin@civicus.local', 'admin@civicus.example.com') then 'admin'
+    when lower(resolved_email) = 'admin@civicus.example.com' then 'admin'
     else 'citizen'
   end;
 begin
@@ -28,23 +28,13 @@ begin
     email = excluded.email,
     full_name = excluded.full_name,
     role = case
-      when lower(excluded.email) in ('admin@civicus.local', 'admin@civicus.example.com') then 'admin'
+      when lower(excluded.email) = 'admin@civicus.example.com' then 'admin'
       else public.profiles.role
     end;
 
   return new;
 end;
 $$;
-
-update public.profiles
-set
-  role = 'admin',
-  full_name = coalesce(nullif(full_name, ''), 'Civicus Admin')
-where lower(email) = 'admin@civicus.local';
-
-update public.profiles
-set full_name = coalesce(nullif(full_name, ''), 'Civicus Citizen')
-where lower(email) = 'citizen@civicus.local';
 
 update public.profiles
 set
