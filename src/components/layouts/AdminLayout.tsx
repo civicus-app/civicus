@@ -3,7 +3,9 @@ import { useMemo, useState } from 'react';
 import { Search, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import NotificationBell from '../common/NotificationBell';
+import BrandMark from '../common/BrandMark';
 import { MUNICIPALITY_NAME, TIME_PERIODS } from '../../lib/constants';
+import { useLanguageStore } from '../../store/languageStore';
 import {
   Select,
   SelectContent,
@@ -21,15 +23,17 @@ export default function AdminLayout() {
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
   const [timePeriod, setTimePeriod] = useState('30d');
 
   const isDashboard = location.pathname === '/admin';
 
   const initials = useMemo(() => {
-    const name = profile?.full_name || 'Admin User';
+    const name = profile?.full_name || tx('Administrator', 'Admin User');
     const parts = name.split(' ').filter(Boolean);
     return (parts[0]?.[0] || 'A') + (parts[1]?.[0] || '');
-  }, [profile?.full_name]);
+  }, [profile?.full_name, tx]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -42,13 +46,11 @@ export default function AdminLayout() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-[76px] flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="h-11 w-11 rounded-full border border-white/50 bg-white/20 backdrop-blur flex items-center justify-center text-white font-bold text-sm">
-                TK
-              </div>
+              <BrandMark className="h-11 w-11 rounded-full border-white/45 bg-white/20" />
               <div className="min-w-0">
                 <h1 className="text-white font-semibold text-[1.1rem] sm:text-[1.45rem] leading-tight truncate">
                   {MUNICIPALITY_NAME}{' '}
-                  <span className="font-normal text-white/80">Policy Dashboard</span>
+                  <span className="font-normal text-white/80">{tx('Administrasjon', 'Administration')}</span>
                 </h1>
               </div>
             </div>
@@ -62,7 +64,11 @@ export default function AdminLayout() {
                   <SelectContent>
                     {TIME_PERIODS.map((period) => (
                       <SelectItem key={period.value} value={period.value}>
-                        {period.label}
+                        {period.value === '7d'
+                          ? tx('Siste 7 dager', 'Last 7 days')
+                          : period.value === '30d'
+                          ? tx('Siste 30 dager', 'Last 30 days')
+                          : tx('Siste 90 dager', 'Last 90 days')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -71,7 +77,7 @@ export default function AdminLayout() {
 
               <button
                 className="h-10 w-10 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label="Search"
+                aria-label={tx('Sok', 'Search')}
               >
                 <Search className="h-5 w-5" />
               </button>
@@ -83,16 +89,17 @@ export default function AdminLayout() {
                   {initials}
                 </div>
                 <span className="text-white text-sm font-medium max-w-[160px] truncate">
-                  {profile?.full_name || 'Administrator'}
+                  {profile?.full_name || tx('Administrator', 'Administrator')}
                 </span>
               </div>
 
               <button
                 onClick={handleSignOut}
-                className="h-10 w-10 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 transition-colors"
-                title="Sign out"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
+                title={tx('Logg ut', 'Sign out')}
               >
                 <LogOut className="h-5 w-5" />
+                <span>{tx('Logg ut', 'Sign out')}</span>
               </button>
             </div>
           </div>

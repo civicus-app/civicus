@@ -78,7 +78,9 @@ export const usePolicy = (id: string) => {
       try {
         const { data, error } = await supabase
           .from('policies')
-          .select('*, categories(*), policy_tags(*), policy_attachments(*), policy_districts(district_id, districts(name))')
+          .select(
+            '*, categories(*), policy_tags(*), policy_attachments(*), policy_topics(*), policy_updates(*), events(*), policy_districts(district_id, districts(name))'
+          )
           .eq('id', id)
           .single();
         if (error) throw error;
@@ -88,6 +90,17 @@ export const usePolicy = (id: string) => {
           tags: (data as any)?.tags || (data as any)?.policy_tags || [],
           attachments:
             (data as any)?.attachments || (data as any)?.policy_attachments || [],
+          topics: ((data as any)?.topics || (data as any)?.policy_topics || []).sort(
+            (left: any, right: any) => (left.sort_order || 0) - (right.sort_order || 0)
+          ),
+          updates: ((data as any)?.updates || (data as any)?.policy_updates || []).sort(
+            (left: any, right: any) =>
+              new Date(right.created_at).getTime() - new Date(left.created_at).getTime()
+          ),
+          events: ((data as any)?.events || []).sort(
+            (left: any, right: any) =>
+              new Date(left.event_date).getTime() - new Date(right.event_date).getTime()
+          ),
           districts: (data as any)?.districts || (data as any)?.policy_districts || [],
         };
         setPolicy(normalized as Policy);

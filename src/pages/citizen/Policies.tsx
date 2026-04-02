@@ -43,8 +43,8 @@ export default function Policies() {
       <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm px-5 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold text-[#2a4a70]">Municipal Policies</h1>
-            <p className="text-[#5b7391] text-sm mt-1">{total} policies found</p>
+            <h1 className="text-3xl font-semibold text-[#2a4a70]">Kommunale saker</h1>
+            <p className="text-[#5b7391] text-sm mt-1">{total} saker funnet</p>
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -76,7 +76,7 @@ export default function Policies() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search policies..."
+              placeholder="Sok i saker..."
               value={search}
               onChange={handleSearch}
               className="pl-10"
@@ -93,7 +93,7 @@ export default function Policies() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="all">Alle statuser</SelectItem>
               {POLICY_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
@@ -112,7 +112,7 @@ export default function Policies() {
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">Alle kategorier</SelectItem>
               {POLICY_CATEGORIES.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
@@ -129,8 +129,8 @@ export default function Policies() {
         ) : policies.length === 0 ? (
           <div className="text-center py-16 text-[#5b7391]">
             <Filter className="h-12 w-12 mx-auto mb-3 opacity-35" />
-            <p className="text-lg font-medium">No policies found</p>
-            <p className="text-sm mt-1">Try adjusting your filters</p>
+            <p className="text-lg font-medium">Ingen saker funnet</p>
+            <p className="text-sm mt-1">Juster filtrene dine</p>
           </div>
         ) : (
           <>
@@ -152,17 +152,17 @@ export default function Policies() {
                   disabled={page === 1}
                   className="px-4 py-2 text-sm border border-[#ccd8e8] rounded-md disabled:opacity-50 hover:bg-[#f3f7fc] text-[#2f4f72]"
                 >
-                  Previous
+                  Forrige
                 </button>
                 <span className="text-sm text-[#5b7391]">
-                  Page {page} of {totalPages}
+                  Side {page} av {totalPages}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
                   className="px-4 py-2 text-sm border border-[#ccd8e8] rounded-md disabled:opacity-50 hover:bg-[#f3f7fc] text-[#2f4f72]"
                 >
-                  Next
+                  Neste
                 </button>
               </div>
             )}

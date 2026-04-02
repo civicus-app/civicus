@@ -7,9 +7,12 @@ import AIInsights from '../../components/admin/AIInsights';
 import SentimentOverviewPanel from '../../components/admin/SentimentOverviewPanel';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import type { AdminOutletContext } from '../../components/layouts/AdminLayout';
+import { useLanguageStore } from '../../store/languageStore';
 
 export default function AdminDashboard() {
   const { timePeriod } = useOutletContext<AdminOutletContext>();
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
   const { metrics, analytics, loading, error } = useDashboard(timePeriod);
 
   if (loading) return <LoadingSpinner fullScreen />;
@@ -19,29 +22,29 @@ export default function AdminDashboard() {
 
   const sentimentLabel =
     displayMetrics.avg_sentiment_score >= 4
-      ? 'Positive'
+      ? tx('Positiv', 'Positive')
       : displayMetrics.avg_sentiment_score >= 2.5
-      ? 'Neutral'
-      : 'Negative';
+      ? tx('Noytral', 'Neutral')
+      : tx('Negativ', 'Negative');
 
   return (
     <div className="space-y-4 lg:space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
-        <MetricCard title="Active Policies" value={displayMetrics.active_policies} />
+        <MetricCard title={tx('Aktive saker', 'Active policies')} value={displayMetrics.active_policies} />
         <MetricCard
-          title="Total Participants"
+          title={tx('Totale deltakere', 'Total participants')}
           value={displayMetrics.total_participants.toLocaleString()}
         />
         <MetricCard
-          title="Engagement Rate"
+          title={tx('Deltakelsesgrad', 'Participation rate')}
           value={`${displayMetrics.engagement_rate}%`}
         />
         <MetricCard
-          title="Youth Participation"
+          title={tx('Ungdomsdeltakelse', 'Youth participation')}
           value={`${displayMetrics.youth_participation}%`}
         />
         <MetricCard
-          title="Avg Sentiment Score"
+          title={tx('Snitt stemningsscore', 'Average sentiment score')}
           value={displayMetrics.avg_sentiment_score.toFixed(1)}
           label={sentimentLabel}
         />
@@ -49,7 +52,7 @@ export default function AdminDashboard() {
         <div className="bg-white border border-[#d4dde9] rounded-xl shadow-sm overflow-hidden">
           <div className="px-4 py-3 bg-[#f2f5fa] border-b border-[#d8e0eb]">
             <p className="text-sm sm:text-base font-semibold text-[#2a4a70]">
-              Top Issue:
+              {tx('Topp tema:', 'Top issue:')}
             </p>
           </div>
           <div className="px-4 py-4">
@@ -64,7 +67,7 @@ export default function AdminDashboard() {
         <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm">
           <header className="px-5 py-4 border-b border-[#d8e0eb]">
             <h2 className="text-xl sm:text-2xl font-semibold text-[#2a4a70]">
-              Engagement Funnel
+              {tx('Deltakelsestrakt', 'Participation funnel')}
             </h2>
           </header>
           <div className="p-4 lg:p-5">
@@ -75,7 +78,7 @@ export default function AdminDashboard() {
         <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm">
           <header className="px-5 py-4 border-b border-[#d8e0eb]">
             <h2 className="text-xl sm:text-2xl font-semibold text-[#2a4a70]">
-              Participation by District
+              {tx('Deltakelse per bydel', 'Participation per district')}
             </h2>
           </header>
           <div className="p-4 lg:p-5">
@@ -93,14 +96,14 @@ export default function AdminDashboard() {
         <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm flex flex-col">
           <header className="px-5 py-4 border-b border-[#d8e0eb]">
             <h2 className="text-xl sm:text-2xl font-semibold text-[#2a4a70]">
-              AI Insight Summary
+              {tx('AI-oppsummering', 'AI summary')}
             </h2>
           </header>
           <div className="p-4 lg:p-5 flex-1">
             <AIInsights />
             {error ? (
               <p className="mt-3 text-xs text-[#6b7f99]">
-                Some analytics data could not be loaded: {error}
+                {tx('Noe analyse-data kunne ikke lastes:', 'Some analytics data could not be loaded:')} {error}
               </p>
             ) : null}
           </div>

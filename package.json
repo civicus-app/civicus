@@ -38,7 +38,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bootstrap:accounts": "node scripts/bootstrap-default-accounts.mjs"
   },
   "devDependencies": {
     "@types/react": "^18.3.20",

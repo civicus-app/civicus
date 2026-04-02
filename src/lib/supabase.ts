@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import { createLocalSupabaseClient } from './localSupabase';
 
@@ -23,6 +24,28 @@ export const supabase: any = useSupabase
       },
     })
   : createLocalSupabaseClient();
+
+const decodeJwtPayload = (token: string) => {
+  try {
+    const [, payload] = token.split('.');
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '='));
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+};
+
+export const getAuthSessionId = (session: Session | null | undefined): string | null => {
+  if (!session) return null;
+  const explicitSessionId = (session as any).session_id;
+  if (typeof explicitSessionId === 'string' && explicitSessionId) return explicitSessionId;
+
+  const jwtPayload = typeof session.access_token === 'string' ? decodeJwtPayload(session.access_token) : null;
+  const sessionId = jwtPayload?.session_id;
+  return typeof sessionId === 'string' && sessionId ? sessionId : null;
+};
 
 export const isAdmin = async (): Promise<boolean> => {
   const {

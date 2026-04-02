@@ -2,14 +2,23 @@ import type {
   Category,
   DashboardMetrics,
   EngagementAnalytics,
+  Event,
   Feedback,
   Notification,
   Policy,
   PolicyAttachment,
+  PolicyFollow,
   PolicyTag,
+  PolicyTopic,
+  PolicyUpdate,
   SentimentType,
   SentimentVote,
 } from '../types/policy.types';
+import type {
+  AccountMode,
+  AuthChallengeStatus,
+  VerifiedSessionSource,
+} from '../types/auth.types';
 import type { District, Profile } from '../types/user.types';
 
 type Role = 'citizen' | 'admin' | 'super_admin';
@@ -35,6 +44,65 @@ interface LocalPolicyView {
   viewed_at: string;
 }
 
+interface LocalAdminInvite {
+  id: string;
+  code_hash: string;
+  email: string | null;
+  expires_at: string;
+  used_at: string | null;
+  used_by: string | null;
+  revoked_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface LocalAuthEmailChallenge {
+  id: string;
+  email: string;
+  user_id: string | null;
+  purpose: 'signup' | 'login';
+  account_mode: AccountMode;
+  invite_id: string | null;
+  code_hash: string;
+  verification_token_hash: string | null;
+  status: AuthChallengeStatus;
+  attempts: number;
+  max_attempts: number;
+  expires_at: string;
+  resend_available_at: string;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface LocalTrustedDevice {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  expires_at: string;
+  revoked_at: string | null;
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface LocalVerifiedSession {
+  id: string;
+  user_id: string;
+  session_id: string;
+  role: Role;
+  source: VerifiedSessionSource;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface LocalSessionState {
+  user_id: string;
+  session_id: string;
+}
+
 interface LocalState {
   auth_users: LocalAuthUser[];
   profiles: Profile[];
@@ -44,10 +112,18 @@ interface LocalState {
   policy_districts: LocalPolicyDistrict[];
   policy_tags: PolicyTag[];
   policy_attachments: PolicyAttachment[];
+  policy_topics: PolicyTopic[];
+  policy_updates: PolicyUpdate[];
+  events: Event[];
   sentiment_votes: SentimentVote[];
   feedback: Feedback[];
   policy_views: LocalPolicyView[];
+  policy_follows: PolicyFollow[];
   notifications: Notification[];
+  admin_invites: LocalAdminInvite[];
+  auth_email_challenges: LocalAuthEmailChallenge[];
+  trusted_devices: LocalTrustedDevice[];
+  verified_sessions: LocalVerifiedSession[];
 }
 
 type AuthEvent = 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED';
@@ -55,13 +131,13 @@ type AuthCallback = (event: AuthEvent, session: any) => void;
 type QueryResult<T = any> = { data: T; error: any; count?: number | null };
 
 const DB_STORAGE_KEY = 'civicus.local.db.v1';
-const SESSION_STORAGE_KEY = 'civicus.local.session.user_id.v1';
+const SESSION_STORAGE_KEY = 'civicus.local.session.v2';
 
 const authListeners = new Set<AuthCallback>();
 const activeChannels = new Set<LocalChannel>();
 
 let inMemoryState: LocalState | null = null;
-let inMemorySessionUserId: string | null = null;
+let inMemorySessionState: LocalSessionState | null = null;
 
 const SENTIMENT_SCORE: Record<SentimentType, number> = {
   positive: 5,
@@ -83,6 +159,20 @@ const deepClone = <T>(value: T): T => {
   if (typeof structuredClone === 'function') return structuredClone(value);
   return JSON.parse(JSON.stringify(value)) as T;
 };
+
+const localHash = (value: string) => {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `local_${(hash >>> 0).toString(16)}`;
+};
+
+const randomNumericCode = () =>
+  String(Math.floor(100000 + Math.random() * 900000));
+
+const randomSecret = () => `${makeId()}_${Math.random().toString(36).slice(2, 10)}`;
 
 const createSeedState = (): LocalState => {
   const now = nowIso();
@@ -208,6 +298,116 @@ const createSeedState = (): LocalState => {
     { policy_id: policyByTitle('Expand Public Bus Routes in Outer Districts').id, district_id: districtByName('Fastlandet').id },
     { policy_id: policyByTitle('Expand Public Bus Routes in Outer Districts').id, district_id: districtByName('Kvaloya').id },
     { policy_id: policyByTitle('Neighborhood Cultural Hubs Funding').id, district_id: districtByName('Tromsoya').id },
+  ];
+
+  const policy_topics: PolicyTopic[] = [
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Expand Public Bus Routes in Outer Districts').id,
+      slug: 'bedre-sykkelveier',
+      label_no: 'Bedre Bussruter',
+      label_en: 'Better Bus Service',
+      description_no: 'Kveldsruter, helgetilbud og dekning i ytterdistriktene.',
+      description_en: 'Evening routes, weekend service, and coverage in outer districts.',
+      icon_key: 'bedre-sykkelveier',
+      sort_order: 1,
+      created_at: now,
+    },
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Expand Public Bus Routes in Outer Districts').id,
+      slug: 'budsjett-kostnad',
+      label_no: 'Kostnad og Finansiering',
+      label_en: 'Cost and Funding',
+      description_no: 'Hva utvidelsen koster og hvordan den finansieres.',
+      description_en: 'What the expansion costs and how it will be funded.',
+      icon_key: 'budsjett-kostnad',
+      sort_order: 2,
+      created_at: now,
+    },
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Expand Public Bus Routes in Outer Districts').id,
+      slug: 'anleggsperioder',
+      label_no: 'Gjennomforing',
+      label_en: 'Delivery Plan',
+      description_no: 'Fasevis utrulling og milepaeler for oppstart.',
+      description_en: 'Phased rollout and milestones for implementation.',
+      icon_key: 'anleggsperioder',
+      sort_order: 3,
+      created_at: now,
+    },
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Affordable Youth Housing Development Program').id,
+      slug: 'flere-gronne-soner',
+      label_no: 'Bomiljo og Kvalitet',
+      label_en: 'Living Quality',
+      description_no: 'Hvordan prosjektet skaper gode bomiljoer for unge.',
+      description_en: 'How the project creates better living environments for young residents.',
+      icon_key: 'flere-gronne-soner',
+      sort_order: 1,
+      created_at: now,
+    },
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Affordable Youth Housing Development Program').id,
+      slug: 'budsjett-kostnad',
+      label_no: 'Leieniva og Budsjett',
+      label_en: 'Rent Levels and Budget',
+      description_no: 'Leietak, kommunale bidrag og prioriteringer.',
+      description_en: 'Rent ceilings, municipal support, and tradeoffs.',
+      icon_key: 'budsjett-kostnad',
+      sort_order: 2,
+      created_at: now,
+    },
+  ];
+
+  const policy_updates: PolicyUpdate[] = [
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Expand Public Bus Routes in Outer Districts').id,
+      title: 'Consultation window extended',
+      content:
+        'The municipality extended the consultation period by two weeks to allow more residents in Fastlandet and Kvaloya to provide input.',
+      update_type: 'deadline',
+      created_by: adminId,
+      created_at: now,
+    },
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Affordable Youth Housing Development Program').id,
+      title: 'Location shortlist published',
+      content:
+        'Three candidate development areas are now being evaluated, with proximity to public transport and campuses as key criteria.',
+      update_type: 'info',
+      created_by: adminId,
+      created_at: now,
+    },
+    {
+      id: makeId(),
+      policy_id: policyByTitle('City Center Low-Emission Zone').id,
+      title: 'Proposal moved to review',
+      content:
+        'The proposal is under review after the consultation period closed. An implementation recommendation will be published next month.',
+      update_type: 'status_change',
+      created_by: adminId,
+      created_at: now,
+    },
+  ];
+
+  const events: Event[] = [
+    {
+      id: makeId(),
+      policy_id: policyByTitle('Expand Public Bus Routes in Outer Districts').id,
+      title: 'Open information meeting',
+      description: 'Meet the project team and discuss route priorities with planners and transport staff.',
+      event_date: '2026-02-18T18:00:00.000Z',
+      location: 'Tromso Library, Main Hall',
+      mode: 'hybrid',
+      registration_url: 'https://example.com/events/bus-routes',
+      created_at: now,
+    },
   ];
 
   const profiles: Profile[] = [
@@ -364,6 +564,21 @@ const createSeedState = (): LocalState => {
     },
   ];
 
+  const admin_invites: LocalAdminInvite[] = [
+    {
+      id: makeId(),
+      code_hash: localHash('CIVICUS-ADMIN-ACCESS'),
+      email: null,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      used_at: null,
+      used_by: null,
+      revoked_at: null,
+      created_by: adminId,
+      created_at: now,
+      updated_at: now,
+    },
+  ];
+
   return {
     auth_users,
     profiles,
@@ -373,14 +588,45 @@ const createSeedState = (): LocalState => {
     policy_districts,
     policy_tags,
     policy_attachments: [],
+    policy_topics,
+    policy_updates,
+    events,
     sentiment_votes,
     feedback,
     policy_views,
+    policy_follows: [],
     notifications,
+    admin_invites,
+    auth_email_challenges: [],
+    trusted_devices: [],
+    verified_sessions: [],
   };
 };
 
 const hasLocalStorage = () => typeof window !== 'undefined' && !!window.localStorage;
+
+const normalizeState = (state: Partial<LocalState>): LocalState => ({
+  auth_users: state.auth_users || [],
+  profiles: state.profiles || [],
+  districts: state.districts || [],
+  categories: state.categories || [],
+  policies: state.policies || [],
+  policy_districts: state.policy_districts || [],
+  policy_tags: state.policy_tags || [],
+  policy_attachments: state.policy_attachments || [],
+  policy_topics: state.policy_topics || [],
+  policy_updates: state.policy_updates || [],
+  events: state.events || [],
+  sentiment_votes: state.sentiment_votes || [],
+  feedback: state.feedback || [],
+  policy_views: state.policy_views || [],
+  policy_follows: state.policy_follows || [],
+  notifications: state.notifications || [],
+  admin_invites: state.admin_invites || [],
+  auth_email_challenges: state.auth_email_challenges || [],
+  trusted_devices: state.trusted_devices || [],
+  verified_sessions: state.verified_sessions || [],
+});
 
 const loadState = (): LocalState => {
   if (inMemoryState) return inMemoryState;
@@ -398,8 +644,9 @@ const loadState = (): LocalState => {
   }
 
   try {
-    const parsed = JSON.parse(raw) as LocalState;
+    const parsed = normalizeState(JSON.parse(raw) as Partial<LocalState>);
     inMemoryState = parsed;
+    window.localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(parsed));
     return parsed;
   } catch {
     inMemoryState = createSeedState();
@@ -415,18 +662,40 @@ const saveState = (state: LocalState) => {
   }
 };
 
-const loadSessionUserId = (): string | null => {
-  if (inMemorySessionUserId !== null) return inMemorySessionUserId;
+const loadSessionState = (): LocalSessionState | null => {
+  if (inMemorySessionState !== null) return inMemorySessionState;
   if (!hasLocalStorage()) return null;
-  inMemorySessionUserId = window.localStorage.getItem(SESSION_STORAGE_KEY);
-  return inMemorySessionUserId;
+
+  const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as LocalSessionState | string;
+    if (typeof parsed === 'string') {
+      inMemorySessionState = {
+        user_id: parsed,
+        session_id: makeId(),
+      };
+      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(inMemorySessionState));
+      return inMemorySessionState;
+    }
+    if (parsed?.user_id && parsed?.session_id) {
+      inMemorySessionState = parsed;
+      return parsed;
+    }
+  } catch {
+    // Ignore invalid cached session payloads.
+  }
+
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  return null;
 };
 
-const saveSessionUserId = (userId: string | null) => {
-  inMemorySessionUserId = userId;
+const saveSessionState = (sessionState: LocalSessionState | null) => {
+  inMemorySessionState = sessionState;
   if (!hasLocalStorage()) return;
-  if (userId) {
-    window.localStorage.setItem(SESSION_STORAGE_KEY, userId);
+  if (sessionState) {
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionState));
   } else {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
   }
@@ -437,15 +706,16 @@ const getAuthUserById = (state: LocalState, userId?: string | null) => {
   return state.auth_users.find((user) => user.id === userId) || null;
 };
 
-const toAuthSession = (authUser: LocalAuthUser | null) => {
+const toAuthSession = (authUser: LocalAuthUser | null, sessionId?: string | null) => {
   if (!authUser) return null;
   const expiresAt = Math.floor(Date.now() / 1000) + 3600;
   return {
-    access_token: `local-token-${authUser.id}`,
-    refresh_token: `local-refresh-${authUser.id}`,
+    access_token: `local-token-${sessionId || authUser.id}`,
+    refresh_token: `local-refresh-${sessionId || authUser.id}`,
     token_type: 'bearer',
     expires_in: 3600,
     expires_at: expiresAt,
+    session_id: sessionId || authUser.id,
     user: {
       id: authUser.id,
       email: authUser.email,
@@ -460,6 +730,539 @@ const toAuthSession = (authUser: LocalAuthUser | null) => {
 
 const emitAuth = (event: AuthEvent, session: any) => {
   authListeners.forEach((callback) => callback(event, session));
+};
+
+const getCurrentSessionContext = (state: LocalState) => {
+  const sessionState = loadSessionState();
+  const authUser = getAuthUserById(state, sessionState?.user_id);
+  const profile = state.profiles.find((item) => item.id === authUser?.id) || null;
+  return { sessionState, authUser, profile };
+};
+
+const getCurrentVerifiedSession = (state: LocalState) => {
+  const { sessionState, authUser } = getCurrentSessionContext(state);
+  if (!sessionState || !authUser) return null;
+  return (
+    state.verified_sessions.find(
+      (item) =>
+        item.user_id === authUser.id &&
+        item.session_id === sessionState.session_id &&
+        item.expires_at > nowIso()
+    ) || null
+  );
+};
+
+const markExistingChallengesCancelled = (
+  state: LocalState,
+  email: string,
+  purpose: 'signup' | 'login'
+) => {
+  state.auth_email_challenges.forEach((challenge) => {
+    if (
+      challenge.email === email &&
+      challenge.purpose === purpose &&
+      (challenge.status === 'pending' || challenge.status === 'verified')
+    ) {
+      challenge.status = 'cancelled';
+      challenge.updated_at = nowIso();
+    }
+  });
+};
+
+const buildOtpChallenge = (
+  params: Pick<LocalAuthEmailChallenge, 'email' | 'user_id' | 'purpose' | 'account_mode' | 'invite_id'>
+) => {
+  const now = nowIso();
+  const code = randomNumericCode();
+
+  const challenge: LocalAuthEmailChallenge = {
+    id: makeId(),
+    email: params.email,
+    user_id: params.user_id,
+    purpose: params.purpose,
+    account_mode: params.account_mode,
+    invite_id: params.invite_id,
+    code_hash: localHash(code),
+    verification_token_hash: null,
+    status: 'pending',
+    attempts: 0,
+    max_attempts: 5,
+    expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    resend_available_at: new Date(Date.now() + 60 * 1000).toISOString(),
+    verified_at: null,
+    created_at: now,
+    updated_at: now,
+  };
+
+  return { challenge, code };
+};
+
+const validateChallengeCode = (
+  challenge: LocalAuthEmailChallenge,
+  code: string
+): { valid: boolean; error?: string } => {
+  if (challenge.expires_at <= nowIso()) {
+    challenge.status = 'expired';
+    challenge.updated_at = nowIso();
+    return { valid: false, error: 'The verification code has expired' };
+  }
+
+  if (challenge.attempts >= challenge.max_attempts) {
+    challenge.status = 'expired';
+    challenge.updated_at = nowIso();
+    return { valid: false, error: 'Too many attempts. Request a new code.' };
+  }
+
+  if (challenge.code_hash !== localHash(code.trim())) {
+    challenge.attempts += 1;
+    challenge.updated_at = nowIso();
+    if (challenge.attempts >= challenge.max_attempts) {
+      challenge.status = 'expired';
+    }
+    return { valid: false, error: 'Invalid verification code' };
+  }
+
+  return { valid: true };
+};
+
+const ensureSessionVerified = (
+  state: LocalState,
+  authUser: LocalAuthUser,
+  source: VerifiedSessionSource
+) => {
+  const sessionState = loadSessionState();
+  if (!sessionState) return null;
+
+  const now = nowIso();
+  const existing = state.verified_sessions.find(
+    (item) => item.user_id === authUser.id && item.session_id === sessionState.session_id
+  );
+  const baseRow = {
+    user_id: authUser.id,
+    session_id: sessionState.session_id,
+    role: authUser.role,
+    source,
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: now,
+  };
+
+  if (existing) {
+    Object.assign(existing, baseRow);
+    return existing;
+  }
+
+  const row: LocalVerifiedSession = {
+    id: makeId(),
+    ...baseRow,
+    created_at: now,
+  };
+  state.verified_sessions.push(row);
+  return row;
+};
+
+const invokeLocalFunction = async (name: string, body: Record<string, any> = {}) => {
+  const state = deepClone(loadState());
+  const { authUser, profile } = getCurrentSessionContext(state);
+
+  if (name === 'auth-dev-signup') {
+    const normalizedEmail = String(body.email || '').trim().toLowerCase();
+    const accountMode = body.accountMode === 'admin' ? 'admin' : 'citizen';
+    const fullName = String(body.fullName || '').trim();
+    const password = String(body.password || '');
+
+    if (!normalizedEmail) {
+      return { data: null, error: { message: 'Email is required' } };
+    }
+
+    if (fullName.length < 2) {
+      return { data: null, error: { message: 'Full name must be at least 2 characters' } };
+    }
+
+    if (password.length < 8) {
+      return { data: null, error: { message: 'Password must be at least 8 characters' } };
+    }
+
+    if (state.auth_users.some((item) => item.email === normalizedEmail)) {
+      return { data: null, error: { message: 'An account already exists for this email' } };
+    }
+
+    let inviteId: string | null = null;
+    if (accountMode === 'admin') {
+      const codeHash = localHash(String(body.inviteCode || '').trim());
+      const invite = state.admin_invites.find(
+        (item) =>
+          item.code_hash === codeHash &&
+          !item.used_at &&
+          !item.revoked_at &&
+          item.expires_at > nowIso() &&
+          (!item.email || item.email === normalizedEmail)
+      );
+
+      if (!invite) {
+        return { data: null, error: { message: 'Invalid or expired admin invite code' } };
+      }
+
+      inviteId = invite.id;
+    }
+
+    const newUser: LocalAuthUser = {
+      id: makeId(),
+      email: normalizedEmail,
+      password,
+      full_name: fullName,
+      role: accountMode === 'admin' ? 'admin' : 'citizen',
+      created_at: nowIso(),
+    };
+
+    state.auth_users.push(newUser);
+    state.profiles.push({
+      id: newUser.id,
+      email: newUser.email,
+      full_name: newUser.full_name,
+      role: newUser.role,
+      district_id: null as any,
+      date_of_birth: '',
+      avatar_url: '',
+      email_notifications: true,
+      created_at: newUser.created_at,
+      updated_at: newUser.created_at,
+    });
+
+    if (inviteId) {
+      const invite = state.admin_invites.find((item) => item.id === inviteId);
+      if (invite) {
+        invite.used_at = nowIso();
+        invite.used_by = newUser.id;
+        invite.updated_at = nowIso();
+      }
+    }
+
+    saveState(state);
+    return { data: { success: true }, error: null };
+  }
+
+  if (name === 'auth-start-signup') {
+    const normalizedEmail = String(body.email || '').trim().toLowerCase();
+    const accountMode = body.accountMode === 'admin' ? 'admin' : 'citizen';
+
+    if (!normalizedEmail) {
+      return { data: null, error: { message: 'Email is required' } };
+    }
+
+    if (state.auth_users.some((item) => item.email === normalizedEmail)) {
+      return { data: null, error: { message: 'An account already exists for this email' } };
+    }
+
+    let inviteId: string | null = null;
+    if (accountMode === 'admin') {
+      const codeHash = localHash(String(body.inviteCode || '').trim());
+      const invite = state.admin_invites.find(
+        (item) =>
+          item.code_hash === codeHash &&
+          !item.used_at &&
+          !item.revoked_at &&
+          item.expires_at > nowIso() &&
+          (!item.email || item.email === normalizedEmail)
+      );
+
+      if (!invite) {
+        return { data: null, error: { message: 'Invalid or expired admin invite code' } };
+      }
+      inviteId = invite.id;
+    }
+
+    const existingPending = state.auth_email_challenges.find(
+      (item) =>
+        item.email === normalizedEmail &&
+        item.purpose === 'signup' &&
+        item.status === 'pending' &&
+        item.resend_available_at > nowIso()
+    );
+    if (existingPending) {
+      return {
+        data: null,
+        error: { message: 'Please wait before requesting another verification code' },
+      };
+    }
+
+    markExistingChallengesCancelled(state, normalizedEmail, 'signup');
+    const { challenge, code } = buildOtpChallenge({
+      email: normalizedEmail,
+      user_id: null,
+      purpose: 'signup',
+      account_mode: accountMode,
+      invite_id: inviteId,
+    });
+    state.auth_email_challenges.push(challenge);
+    saveState(state);
+    return {
+      data: {
+        challengeId: challenge.id,
+        email: normalizedEmail,
+        accountMode,
+        expiresAt: challenge.expires_at,
+        resendAvailableAt: challenge.resend_available_at,
+        debugCode: code,
+      },
+      error: null,
+    };
+  }
+
+  if (name === 'auth-verify-signup-code') {
+    const normalizedEmail = String(body.email || '').trim().toLowerCase();
+    const challenge = [...state.auth_email_challenges]
+      .filter(
+        (item) =>
+          item.email === normalizedEmail &&
+          item.purpose === 'signup' &&
+          item.status === 'pending'
+      )
+      .sort((left, right) => right.created_at.localeCompare(left.created_at))[0];
+
+    if (!challenge) {
+      return { data: null, error: { message: 'No active signup challenge found' } };
+    }
+
+    const validation = validateChallengeCode(challenge, String(body.code || ''));
+    if (!validation.valid) {
+      saveState(state);
+      return { data: null, error: { message: validation.error } };
+    }
+
+    const verificationToken = randomSecret();
+    challenge.status = 'verified';
+    challenge.verified_at = nowIso();
+    challenge.verification_token_hash = localHash(verificationToken);
+    challenge.updated_at = nowIso();
+    saveState(state);
+
+    return {
+      data: {
+        verificationToken,
+        email: normalizedEmail,
+        accountMode: challenge.account_mode,
+      },
+      error: null,
+    };
+  }
+
+  if (name === 'auth-complete-signup') {
+    const normalizedEmail = String(body.email || '').trim().toLowerCase();
+    const challenge = [...state.auth_email_challenges]
+      .filter(
+        (item) =>
+          item.email === normalizedEmail &&
+          item.purpose === 'signup' &&
+          item.status === 'verified'
+      )
+      .sort((left, right) => right.updated_at.localeCompare(left.updated_at))[0];
+
+    if (!challenge) {
+      return { data: null, error: { message: 'Verify your email before creating an account' } };
+    }
+
+    if (challenge.verification_token_hash !== localHash(String(body.verificationToken || ''))) {
+      return { data: null, error: { message: 'The signup verification has expired' } };
+    }
+
+    if (state.auth_users.some((item) => item.email === normalizedEmail)) {
+      return { data: null, error: { message: 'An account already exists for this email' } };
+    }
+
+    const newUser: LocalAuthUser = {
+      id: makeId(),
+      email: normalizedEmail,
+      password: String(body.password || ''),
+      full_name: String(body.fullName || 'Citizen User'),
+      role: challenge.account_mode === 'admin' ? 'admin' : 'citizen',
+      created_at: nowIso(),
+    };
+
+    state.auth_users.push(newUser);
+    state.profiles.push({
+      id: newUser.id,
+      email: newUser.email,
+      full_name: newUser.full_name,
+      role: newUser.role,
+      district_id: null as any,
+      date_of_birth: '',
+      avatar_url: '',
+      email_notifications: true,
+      created_at: newUser.created_at,
+      updated_at: newUser.created_at,
+    });
+
+    challenge.status = 'completed';
+    challenge.updated_at = nowIso();
+
+    if (challenge.invite_id) {
+      const invite = state.admin_invites.find((item) => item.id === challenge.invite_id);
+      if (invite) {
+        invite.used_at = nowIso();
+        invite.used_by = newUser.id;
+        invite.updated_at = nowIso();
+      }
+    }
+
+    saveState(state);
+    return { data: { success: true }, error: null };
+  }
+
+  if (name === 'auth-start-login-otp') {
+    if (!authUser || !profile) {
+      return { data: null, error: { message: 'Sign in before requesting a verification code' } };
+    }
+
+    const existingPending = state.auth_email_challenges.find(
+      (item) =>
+        item.email === authUser.email &&
+        item.user_id === authUser.id &&
+        item.purpose === 'login' &&
+        item.status === 'pending' &&
+        item.resend_available_at > nowIso()
+    );
+    if (existingPending) {
+      return {
+        data: null,
+        error: { message: 'Please wait before requesting another verification code' },
+      };
+    }
+
+    markExistingChallengesCancelled(state, authUser.email, 'login');
+    const { challenge, code } = buildOtpChallenge({
+      email: authUser.email,
+      user_id: authUser.id,
+      purpose: 'login',
+      account_mode: profile.role === 'admin' || profile.role === 'super_admin' ? 'admin' : 'citizen',
+      invite_id: null,
+    });
+    state.auth_email_challenges.push(challenge);
+    saveState(state);
+    return {
+      data: {
+        challengeId: challenge.id,
+        email: authUser.email,
+        accountMode: challenge.account_mode,
+        expiresAt: challenge.expires_at,
+        resendAvailableAt: challenge.resend_available_at,
+        debugCode: code,
+      },
+      error: null,
+    };
+  }
+
+  if (name === 'auth-verify-login-otp') {
+    if (!authUser || !profile) {
+      return { data: null, error: { message: 'Sign in before verifying a code' } };
+    }
+
+    const challenge = [...state.auth_email_challenges]
+      .filter(
+        (item) =>
+          item.user_id === authUser.id &&
+          item.purpose === 'login' &&
+          item.status === 'pending'
+      )
+      .sort((left, right) => right.created_at.localeCompare(left.created_at))[0];
+
+    if (!challenge) {
+      return { data: null, error: { message: 'No active login challenge found' } };
+    }
+
+    const validation = validateChallengeCode(challenge, String(body.code || ''));
+    if (!validation.valid) {
+      saveState(state);
+      return { data: null, error: { message: validation.error } };
+    }
+
+    challenge.status = 'completed';
+    challenge.verified_at = nowIso();
+    challenge.updated_at = nowIso();
+    ensureSessionVerified(state, authUser, 'otp');
+
+    let trustedDeviceToken: string | undefined;
+    let trustedDeviceExpiresAt: string | undefined;
+    if (body.rememberDevice && profile.role === 'citizen') {
+      trustedDeviceToken = randomSecret();
+      trustedDeviceExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      state.trusted_devices.push({
+        id: makeId(),
+        user_id: authUser.id,
+        token_hash: localHash(trustedDeviceToken),
+        expires_at: trustedDeviceExpiresAt,
+        revoked_at: null,
+        last_used_at: nowIso(),
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      });
+    }
+
+    saveState(state);
+    return {
+      data: {
+        verified: true,
+        role: profile.role,
+        trustedDeviceToken,
+        trustedDeviceExpiresAt,
+      },
+      error: null,
+    };
+  }
+
+  if (name === 'auth-verify-trusted-device') {
+    if (!authUser || !profile) {
+      return { data: null, error: { message: 'Sign in before verifying this device' } };
+    }
+
+    if (profile.role === 'admin' || profile.role === 'super_admin') {
+      return { data: null, error: { message: 'Admins must verify each login with a code' } };
+    }
+
+    const tokenHash = localHash(String(body.token || ''));
+    const device = state.trusted_devices.find(
+      (item) =>
+        item.user_id === authUser.id &&
+        item.token_hash === tokenHash &&
+        !item.revoked_at &&
+        item.expires_at > nowIso()
+    );
+
+    if (!device) {
+      return { data: null, error: { message: 'Trusted device expired or was not recognized' } };
+    }
+
+    device.last_used_at = nowIso();
+    device.updated_at = nowIso();
+    ensureSessionVerified(state, authUser, 'trusted_device');
+    saveState(state);
+
+    return {
+      data: {
+        verified: true,
+        role: profile.role,
+      },
+      error: null,
+    };
+  }
+
+  if (name === 'auth-mark-session-verified') {
+    if (!authUser || !profile) {
+      return { data: null, error: { message: 'Sign in before verifying this session' } };
+    }
+
+    ensureSessionVerified(state, authUser, 'otp');
+    saveState(state);
+
+    return {
+      data: {
+        verified: true,
+        role: profile.role,
+      },
+      error: null,
+    };
+  }
+
+  return { data: null, error: { message: `Function ${name} is not available in local mode` } };
 };
 
 const parseRelativeDays = (timePeriod: string) => {
@@ -720,6 +1523,16 @@ class LocalQueryBuilder implements PromiseLike<QueryResult<any>> {
           tableRows.push(row);
         }
       });
+    } else if (this.table === 'policy_follows') {
+      inserted.forEach((row) => {
+        const idx = tableRows.findIndex(
+          (follow: PolicyFollow) =>
+            follow.policy_id === row.policy_id && follow.user_id === row.user_id
+        );
+        if (idx < 0) {
+          tableRows.push(row);
+        }
+      });
     } else {
       inserted.forEach((row) => tableRows.push(row));
     }
@@ -855,6 +1668,15 @@ const decorateRows = (table: string, rows: any[], clause: string, state: LocalSt
       const category = state.categories.find((item) => item.id === row.category_id) || null;
       const tags = state.policy_tags.filter((item) => item.policy_id === row.id);
       const attachments = state.policy_attachments.filter((item) => item.policy_id === row.id);
+      const topics = state.policy_topics
+        .filter((item) => item.policy_id === row.id)
+        .sort((left, right) => left.sort_order - right.sort_order);
+      const updates = state.policy_updates
+        .filter((item) => item.policy_id === row.id)
+        .sort((left, right) => right.created_at.localeCompare(left.created_at));
+      const events = state.events
+        .filter((item) => item.policy_id === row.id)
+        .sort((left, right) => left.event_date.localeCompare(right.event_date));
       const policyDistricts = state.policy_districts
         .filter((item) => item.policy_id === row.id)
         .map((item) => ({
@@ -873,6 +1695,11 @@ const decorateRows = (table: string, rows: any[], clause: string, state: LocalSt
         policy_tags: tags,
         attachments,
         policy_attachments: attachments,
+        topics,
+        policy_topics: topics,
+        updates,
+        policy_updates: updates,
+        events,
         districts: policyDistricts,
         policy_districts: policyDistricts,
       };
@@ -952,7 +1779,27 @@ const createInsertRow = (table: string, value: any) => {
     };
   }
 
-  if (table === 'feedback' || table === 'sentiment_votes') {
+  if (
+    table === 'feedback' ||
+    table === 'sentiment_votes' ||
+    table === 'policy_topics' ||
+    table === 'policy_updates' ||
+    table === 'events' ||
+    table === 'policy_follows'
+  ) {
+    return {
+      ...base,
+      created_at: base.created_at || now,
+      ...(table === 'feedback' || table === 'sentiment_votes' ? { updated_at: now } : {}),
+    };
+  }
+
+  if (
+    table === 'admin_invites' ||
+    table === 'auth_email_challenges' ||
+    table === 'trusted_devices' ||
+    table === 'verified_sessions'
+  ) {
     return {
       ...base,
       created_at: base.created_at || now,
@@ -987,21 +1834,28 @@ export const createLocalSupabaseClient = () => {
     auth: {
       getSession: async () => {
         const state = loadState();
-        const sessionUserId = loadSessionUserId();
-        const authUser = getAuthUserById(state, sessionUserId);
-        return { data: { session: toAuthSession(authUser) }, error: null };
+        const sessionState = loadSessionState();
+        const authUser = getAuthUserById(state, sessionState?.user_id);
+        return {
+          data: { session: toAuthSession(authUser, sessionState?.session_id || null) },
+          error: null,
+        };
       },
       getUser: async () => {
         const state = loadState();
-        const sessionUserId = loadSessionUserId();
-        const authUser = getAuthUserById(state, sessionUserId);
-        return { data: { user: toAuthSession(authUser)?.user || null }, error: null };
+        const sessionState = loadSessionState();
+        const authUser = getAuthUserById(state, sessionState?.user_id);
+        return {
+          data: { user: toAuthSession(authUser, sessionState?.session_id || null)?.user || null },
+          error: null,
+        };
       },
       onAuthStateChange: (callback: AuthCallback) => {
         authListeners.add(callback);
         const state = loadState();
-        const authUser = getAuthUserById(state, loadSessionUserId());
-        callback('INITIAL_SESSION', toAuthSession(authUser));
+        const sessionState = loadSessionState();
+        const authUser = getAuthUserById(state, sessionState?.user_id);
+        callback('INITIAL_SESSION', toAuthSession(authUser, sessionState?.session_id || null));
         return {
           data: {
             subscription: {
@@ -1050,8 +1904,9 @@ export const createLocalSupabaseClient = () => {
         });
 
         saveState(state);
-        saveSessionUserId(newUser.id);
-        const session = toAuthSession(newUser);
+        const sessionState = { user_id: newUser.id, session_id: makeId() };
+        saveSessionState(sessionState);
+        const session = toAuthSession(newUser, sessionState.session_id);
         emitAuth('SIGNED_IN', session);
         return { data: { user: session?.user, session }, error: null };
       },
@@ -1066,13 +1921,14 @@ export const createLocalSupabaseClient = () => {
           return { data: { user: null, session: null }, error: { message: 'Invalid credentials' } };
         }
 
-        saveSessionUserId(user.id);
-        const session = toAuthSession(user);
+        const sessionState = { user_id: user.id, session_id: makeId() };
+        saveSessionState(sessionState);
+        const session = toAuthSession(user, sessionState.session_id);
         emitAuth('SIGNED_IN', session);
         return { data: { user: session?.user, session }, error: null };
       },
       signOut: async () => {
-        saveSessionUserId(null);
+        saveSessionState(null);
         emitAuth('SIGNED_OUT', null);
         return { error: null };
       },
@@ -1086,25 +1942,30 @@ export const createLocalSupabaseClient = () => {
         const policyId = args.policy_uuid;
         if (!policyId) return { data: null, error: { message: 'Missing policy_uuid' } };
         const state = deepClone(loadState());
-        const sessionUserId = loadSessionUserId();
-        if (!sessionUserId) return { data: null, error: null };
+        const sessionState = loadSessionState();
+        if (!sessionState?.user_id) return { data: null, error: null };
 
         const existing = state.policy_views.find(
           (view) =>
             view.policy_id === policyId &&
-            view.user_id === sessionUserId &&
+            view.user_id === sessionState.user_id &&
             view.viewed_at.slice(0, 10) === todayIsoDate()
         );
         if (!existing) {
           state.policy_views.push({
             id: makeId(),
             policy_id: policyId,
-            user_id: sessionUserId,
+            user_id: sessionState.user_id,
             viewed_at: nowIso(),
           });
           saveState(state);
         }
         return { data: null, error: null };
+      }
+
+      if (name === 'is_current_session_verified') {
+        const state = loadState();
+        return { data: !!getCurrentVerifiedSession(state), error: null };
       }
 
       if (name === 'get_dashboard_metrics') {
@@ -1116,6 +1977,10 @@ export const createLocalSupabaseClient = () => {
 
       return { data: null, error: { message: `RPC ${name} is not available in local mode` } };
     },
+    functions: {
+      invoke: async (name: string, options?: { body?: Record<string, any> }) =>
+        invokeLocalFunction(name, options?.body || {}),
+    },
     channel: (name: string) => new LocalChannel(name),
     removeChannel: (channel: LocalChannel) => {
       channel.unsubscribe();
@@ -1123,4 +1988,3 @@ export const createLocalSupabaseClient = () => {
     },
   };
 };
-

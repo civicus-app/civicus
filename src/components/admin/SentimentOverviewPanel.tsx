@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Badge } from '../ui/badge';
 import type { DashboardMetrics, EngagementAnalytics } from '../../types/policy.types';
+import { useLanguageStore } from '../../store/languageStore';
 
 interface SentimentOverviewPanelProps {
   sentiment: DashboardMetrics['sentiment_distribution'];
@@ -25,12 +26,14 @@ export default function SentimentOverviewPanel({
   analytics,
   rows,
 }: SentimentOverviewPanelProps) {
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
   const total = sentiment.positive + sentiment.neutral + sentiment.negative;
 
   const pieData = [
-    { key: 'positive', name: 'Positive', value: sentiment.positive },
-    { key: 'neutral', name: 'Neutral', value: sentiment.neutral },
-    { key: 'negative', name: 'Negative', value: sentiment.negative },
+    { key: 'positive', name: tx('Positiv', 'Positive'), value: sentiment.positive },
+    { key: 'neutral', name: tx('Noytral', 'Neutral'), value: sentiment.neutral },
+    { key: 'negative', name: tx('Negativ', 'Negative'), value: sentiment.negative },
   ].filter((item) => item.value > 0);
 
   const maxEngagement = Math.max(...analytics.map((item) => item.engaged_users), 1);
@@ -48,7 +51,7 @@ export default function SentimentOverviewPanel({
     <div className="bg-white border border-[#d4dde9] rounded-xl shadow-sm h-full">
       <div className="px-5 py-4 border-b border-[#d8e0eb]">
         <h2 className="text-xl sm:text-2xl font-semibold text-[#2a4a70]">
-          Sentiment Overview
+          {tx('Stemningsoversikt', 'Sentiment Overview')}
         </h2>
       </div>
 
@@ -79,19 +82,19 @@ export default function SentimentOverviewPanel({
 
           <div className="space-y-2.5">
             <SentimentStat
-              label="Positive"
+              label={tx('Positiv', 'Positive')}
               value={sentiment.positive}
               total={total}
               color={COLORS.positive}
             />
             <SentimentStat
-              label="Neutral"
+              label={tx('Noytral', 'Neutral')}
               value={sentiment.neutral}
               total={total}
               color={COLORS.neutral}
             />
             <SentimentStat
-              label="Negative"
+              label={tx('Negativ', 'Negative')}
               value={sentiment.negative}
               total={total}
               color={COLORS.negative}
@@ -104,16 +107,16 @@ export default function SentimentOverviewPanel({
             <thead className="bg-[#edf2f8]">
               <tr className="text-left">
                 <th className="px-3 py-2.5 text-sm font-semibold text-[#2d4d71]">
-                  Policy
+                  {tx('Sak', 'Policy')}
                 </th>
                 <th className="px-3 py-2.5 text-sm font-semibold text-[#2d4d71]">
-                  Status
+                  {tx('Status', 'Status')}
                 </th>
                 <th className="px-3 py-2.5 text-right text-sm font-semibold text-[#2d4d71]">
-                  Engagement
+                  {tx('Engasjement', 'Engagement')}
                 </th>
                 <th className="px-3 py-2.5 text-right text-sm font-semibold text-[#2d4d71]">
-                  Rate
+                  {tx('Grad', 'Rate')}
                 </th>
               </tr>
             </thead>
@@ -142,7 +145,7 @@ export default function SentimentOverviewPanel({
               ) : (
                 <tr>
                   <td colSpan={4} className="px-3 py-8 text-center text-sm text-[#5a7190]">
-                    No engagement analytics available yet.
+                    {tx('Ingen engasjementsdata tilgjengelig enda.', 'No engagement analytics available yet.')}
                   </td>
                 </tr>
               )}
@@ -154,7 +157,7 @@ export default function SentimentOverviewPanel({
               to="/admin/policies"
               className="text-sm text-[#2f70ba] font-semibold hover:underline"
             >
-              View All &gt;
+              {tx('Se alle', 'View all')} &gt;
             </Link>
           </div>
         </div>

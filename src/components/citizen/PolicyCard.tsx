@@ -12,10 +12,10 @@ interface PolicyCardProps {
 
 export default function PolicyCard({ policy, engagementCount = 0 }: PolicyCardProps) {
   const statusLabel: Record<string, string> = {
-    active: 'Active',
-    under_review: 'Under Review',
-    closed: 'Closed',
-    draft: 'Draft',
+    active: 'Aktiv',
+    under_review: 'Under vurdering',
+    closed: 'Lukket',
+    draft: 'Utkast',
   };
 
   return (

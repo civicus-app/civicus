@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useLanguageStore } from '../../store/languageStore';
 
 type DistrictLevel = 'high' | 'medium' | 'low';
 
@@ -75,6 +76,8 @@ const toParticipationLevel = (value: number, maxValue: number): DistrictLevel =>
 };
 
 export default function DistrictMap() {
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
   const [hoveredDistrict, setHoveredDistrict] = useState<DistrictMetric | null>(null);
   const [districtCounts, setDistrictCounts] = useState<Record<string, number>>({});
 
@@ -181,7 +184,7 @@ export default function DistrictMap() {
 
         <div className="md:absolute md:bottom-4 md:right-4 mt-2 md:mt-0 bg-white/95 border border-[#ccd7e6] rounded-lg shadow-sm px-3 py-2.5 w-full md:w-[220px]">
           <p className="text-sm sm:text-base font-semibold text-[#284867] mb-2">
-            Participation Level
+            {tx('Deltakelsesniva', 'Participation Level')}
           </p>
           <div className="flex items-center justify-between gap-2 text-xs sm:text-sm font-medium text-[#2e4d71]">
             <span className="inline-flex items-center gap-1.5">
@@ -189,21 +192,21 @@ export default function DistrictMap() {
                 className="inline-block w-2.5 h-2.5 rounded-sm"
                 style={{ backgroundColor: LEVEL_COLOR.high }}
               />
-              High
+              {tx('Hoy', 'High')}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block w-2.5 h-2.5 rounded-sm"
                 style={{ backgroundColor: LEVEL_COLOR.medium }}
               />
-              Medium
+              {tx('Middels', 'Medium')}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block w-2.5 h-2.5 rounded-sm"
                 style={{ backgroundColor: LEVEL_COLOR.low }}
               />
-              Low
+              {tx('Lav', 'Low')}
             </span>
           </div>
         </div>
@@ -212,7 +215,7 @@ export default function DistrictMap() {
           <div className="hidden sm:block absolute top-4 left-4 bg-white border border-[#cfd9e8] rounded-lg px-3 py-2 shadow-sm">
             <p className="text-sm font-semibold text-[#29496c]">{hoveredDistrict.name}</p>
             <p className="text-xs text-[#4b6587]">
-              {hoveredDistrict.participation.toLocaleString()} participants
+              {hoveredDistrict.participation.toLocaleString()} {tx('deltakere', 'participants')}
             </p>
           </div>
         )}

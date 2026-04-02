@@ -65,7 +65,7 @@ export default function Profile() {
     setSaving(true);
     const { error } = await supabase.from('profiles').update(data).eq('id', user.id);
     if (!error) {
-      setSaveMsg('Profile updated successfully!');
+      setSaveMsg('Profil oppdatert!');
       refetchProfile?.();
       setTimeout(() => setSaveMsg(''), 3000);
     }
@@ -76,39 +76,39 @@ export default function Profile() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Profile</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Din profil</h1>
       <Tabs defaultValue="profile">
         <TabsList className="mb-6">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement History</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="profile">Profil</TabsTrigger>
+          <TabsTrigger value="engagement">Historikk</TabsTrigger>
+          <TabsTrigger value="settings">Innstillinger</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
           <Card>
-            <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Personlig informasjon</CardTitle></CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 {saveMsg && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded text-sm">{saveMsg}</div>}
                 <div className="space-y-2">
-                  <Label>Full Name</Label>
+                  <Label>Fullt navn</Label>
                   <Input {...register('full_name')} />
                   {errors.full_name && <p className="text-red-500 text-xs">{errors.full_name.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label>Email</Label>
+                  <Label>E-post</Label>
                   <Input value={profile.email} disabled className="bg-gray-50" />
-                  <p className="text-xs text-gray-500">Email cannot be changed here</p>
+                  <p className="text-xs text-gray-500">E-post kan ikke endres her</p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Date of Birth (optional)</Label>
+                  <Label>Fodselsdato (valgfri)</Label>
                   <Input type="date" {...register('date_of_birth')} />
                 </div>
                 <div className="flex items-center space-x-2">
                   <input type="checkbox" id="email_notifications" {...register('email_notifications')} className="rounded" />
-                  <Label htmlFor="email_notifications" className="font-normal">Receive email notifications</Label>
+                  <Label htmlFor="email_notifications" className="font-normal">Motta e-postvarsler</Label>
                 </div>
-                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Lagrer...' : 'Lagre endringer'}</Button>
               </form>
             </CardContent>
           </Card>
@@ -116,10 +116,10 @@ export default function Profile() {
 
         <TabsContent value="engagement">
           <Card>
-            <CardHeader><CardTitle>Engagement History</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Aktivitetshistorikk</CardTitle></CardHeader>
             <CardContent>
               {engagements.length === 0 ? (
-                <p className="text-gray-500 text-center py-6">No engagement activity yet</p>
+                <p className="text-gray-500 text-center py-6">Ingen aktivitet enda</p>
               ) : (
                 <div className="space-y-3">
                   {engagements.map((e, i) => (
@@ -127,7 +127,7 @@ export default function Profile() {
                       <div>
                         <p className="text-sm font-medium text-gray-900">{e.title || 'Unknown Policy'}</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${e.type === 'Vote' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                          {e.type}
+                          {e.type === 'Vote' ? 'Stemme' : 'Tilbakemelding'}
                         </span>
                       </div>
                       <span className="text-xs text-gray-400">{formatDate(e.date)}</span>
@@ -141,17 +141,17 @@ export default function Profile() {
 
         <TabsContent value="settings">
           <Card>
-            <CardHeader><CardTitle>Account Settings</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Kontoinnstillinger</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between py-3 border-b">
                 <div>
-                  <p className="font-medium text-gray-900">Account Role</p>
+                  <p className="font-medium text-gray-900">Kontorolle</p>
                   <p className="text-sm text-gray-500 capitalize">{profile.role}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between py-3 border-b">
                 <div>
-                  <p className="font-medium text-gray-900">Member Since</p>
+                  <p className="font-medium text-gray-900">Medlem siden</p>
                   <p className="text-sm text-gray-500">{formatDate(profile.created_at)}</p>
                 </div>
               </div>

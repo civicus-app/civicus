@@ -1,8 +1,21 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, MapPin, Paperclip, ThumbsUp, ThumbsDown, Minus, Send, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bell,
+  BellOff,
+  Calendar,
+  MapPin,
+  Paperclip,
+  ThumbsUp,
+  ThumbsDown,
+  Minus,
+  Send,
+  User,
+} from 'lucide-react';
 import { usePolicy } from '../../hooks/usePolicies';
+import { usePolicyFollow } from '../../hooks/usePolicyFollows';
 import { useFeedback, useSentimentVote } from '../../hooks/useFeedback';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +33,7 @@ export default function PolicyDetailPage() {
   const { feedback, submitFeedback } = useFeedback(id!);
   const { userVote, sentimentCounts, castVote } = useSentimentVote(id!);
   const { user } = useAuth();
+  const { following, toggleFollow, loading: followLoading } = usePolicyFollow(id!, user?.id);
   const [feedbackText, setFeedbackText] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -104,11 +118,31 @@ export default function PolicyDetailPage() {
           <div className="prose prose-gray max-w-none">
             <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{policy.description}</p>
           </div>
+          {user ? (
+            <div className="mt-5">
+              <Button variant="outline" onClick={toggleFollow} disabled={followLoading}>
+                {following ? <BellOff className="h-4 w-4 mr-2" /> : <Bell className="h-4 w-4 mr-2" />}
+                {following ? 'Following updates' : 'Follow updates'}
+              </Button>
+            </div>
+          ) : null}
           {policy.tags && policy.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-4">
               {policy.tags.map(tag => (
                 <span key={tag.id} className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full text-xs">{tag.tag}</span>
               ))}
+            </div>
+          )}
+          {policy.districts && policy.districts.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-gray-700">Target districts:</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {policy.districts.map((district) => (
+                  <span key={district.district_id} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                    {district.districts.name}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
           {policy.attachments && policy.attachments.length > 0 && (
@@ -125,6 +159,79 @@ export default function PolicyDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {policy.events && policy.events.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Upcoming events</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {policy.events.map((event) => (
+              <div key={event.id} className="rounded-lg border p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-gray-900">{event.title}</p>
+                    {event.description ? (
+                      <p className="mt-1 text-sm text-gray-600">{event.description}</p>
+                    ) : null}
+                  </div>
+                  <Badge variant="secondary">{event.mode.replace('_', ' ')}</Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-500">
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatDate(event.event_date)}
+                  </span>
+                  {event.location ? (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      {event.location}
+                    </span>
+                  ) : null}
+                </div>
+                {event.registration_url ? (
+                  <a
+                    href={event.registration_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex text-sm font-medium text-primary-600 hover:underline"
+                  >
+                    Register for event
+                  </a>
+                ) : null}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {policy.updates && policy.updates.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Official updates</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {policy.updates.map((update) => (
+              <div key={update.id} className="rounded-lg border p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-gray-900">{update.title}</p>
+                    {update.update_type ? (
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        {update.update_type.replace('_', ' ')}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span className="text-xs text-gray-400">{formatDate(update.created_at)}</span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-gray-700 whitespace-pre-wrap">
+                  {update.content}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sentiment Voting */}
       {policy.status === 'active' && user && (

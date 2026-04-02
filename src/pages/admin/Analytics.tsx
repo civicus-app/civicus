@@ -6,8 +6,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { TIME_PERIODS } from '../../lib/constants';
 import type { EngagementAnalytics } from '../../types/policy.types';
+import { useLanguageStore } from '../../store/languageStore';
 
 export default function Analytics() {
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
   const [timePeriod, setTimePeriod] = useState('30d');
   const [analytics, setAnalytics] = useState<EngagementAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,20 +45,28 @@ export default function Analytics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-500 text-sm">Deep dive into policy engagement data</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx('Analyse', 'Analytics')}</h1>
+          <p className="text-gray-500 text-sm">{tx('Fordypning i engasjementsdata', 'Deep dive into engagement data')}</p>
         </div>
         <Select value={timePeriod} onValueChange={setTimePeriod}>
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {TIME_PERIODS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+            {TIME_PERIODS.map(p => (
+              <SelectItem key={p.value} value={p.value}>
+                {p.value === '7d'
+                  ? tx('Siste 7 dager', 'Last 7 days')
+                  : p.value === '30d'
+                  ? tx('Siste 30 dager', 'Last 30 days')
+                  : tx('Siste 90 dager', 'Last 90 days')}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle>Engagement by Policy</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{tx('Engasjement per sak', 'Engagement by policy')}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={barData} margin={{ top: 0, right: 10, bottom: 40, left: 0 }}>
@@ -64,16 +75,16 @@ export default function Analytics() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="views" fill="#3B82F6" name="Views" />
-                <Bar dataKey="votes" fill="#8B5CF6" name="Votes" />
-                <Bar dataKey="feedback" fill="#10B981" name="Feedback" />
+                <Bar dataKey="views" fill="#3B82F6" name={tx('Visninger', 'Views')} />
+                <Bar dataKey="votes" fill="#8B5CF6" name={tx('Stemmer', 'Votes')} />
+                <Bar dataKey="feedback" fill="#10B981" name={tx('Tilbakemeldinger', 'Feedback')} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Sentiment by Policy</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{tx('Stemning per sak', 'Sentiment by policy')}</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={sentimentData} margin={{ top: 0, right: 10, bottom: 40, left: 0 }}>
@@ -82,9 +93,9 @@ export default function Analytics() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="positive" fill="#10B981" name="Positive" stackId="a" />
-                <Bar dataKey="neutral" fill="#F59E0B" name="Neutral" stackId="a" />
-                <Bar dataKey="negative" fill="#EF4444" name="Negative" stackId="a" />
+                <Bar dataKey="positive" fill="#10B981" name={tx('Positiv', 'Positive')} stackId="a" />
+                <Bar dataKey="neutral" fill="#F59E0B" name={tx('Noytral', 'Neutral')} stackId="a" />
+                <Bar dataKey="negative" fill="#EF4444" name={tx('Negativ', 'Negative')} stackId="a" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -92,13 +103,13 @@ export default function Analytics() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Policy Engagement Table</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{tx('Saksoversikt', 'Policy overview')}</CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  {['Policy', 'Views', 'Votes', 'Feedback', 'Engaged Users', 'Avg Sentiment'].map(h => (
+                  {[tx('Sak', 'Policy'), tx('Visninger', 'Views'), tx('Stemmer', 'Votes'), tx('Tilbakemeldinger', 'Feedback'), tx('Engasjerte brukere', 'Engaged users'), tx('Snitt stemning', 'Avg sentiment')].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                   ))}
                 </tr>
@@ -113,7 +124,7 @@ export default function Analytics() {
                     <td className="px-4 py-3 font-medium">{a.engaged_users}</td>
                     <td className="px-4 py-3">
                       <span className={`font-medium ${a.avg_sentiment_score >= 4 ? 'text-green-600' : a.avg_sentiment_score >= 2.5 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {a.avg_sentiment_score?.toFixed(1) || 'N/A'}
+                        {a.avg_sentiment_score?.toFixed(1) || tx('Ikke tilgjengelig', 'N/A')}
                       </span>
                     </td>
                   </tr>
