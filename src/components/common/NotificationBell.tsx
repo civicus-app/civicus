@@ -1,15 +1,34 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../hooks/useAuth';
-import { formatRelativeTime } from '../../lib/utils';
+import { cn, formatRelativeTime } from '../../lib/utils';
+import { useLanguageStore } from '../../store/languageStore';
 
 interface NotificationBellProps {
   theme?: 'light' | 'dark';
+  children?: ReactNode;
+  containerClassName?: string;
+  triggerClassName?: string;
+  iconClassName?: string;
+  badgeClassName?: string;
+  panelClassName?: string;
+  ariaLabel?: string;
 }
 
-export default function NotificationBell({ theme = 'light' }: NotificationBellProps) {
+export default function NotificationBell({
+  theme = 'light',
+  children,
+  containerClassName,
+  triggerClassName,
+  iconClassName,
+  badgeClassName,
+  panelClassName,
+  ariaLabel = 'Notifications',
+}: NotificationBellProps) {
   const { user } = useAuth();
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications(user?.id);
   const [open, setOpen] = useState(false);
   const buttonTheme =
@@ -18,15 +37,25 @@ export default function NotificationBell({ theme = 'light' }: NotificationBellPr
       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100';
 
   return (
-    <div className="relative">
+    <div className={cn('relative', containerClassName)}>
       <button
         onClick={() => setOpen(!open)}
-        className={`relative p-2 rounded-full focus:outline-none transition-colors ${buttonTheme}`}
-        aria-label="Notifications"
+        className={cn(
+          'relative rounded-full focus:outline-none transition-colors',
+          children ? '' : 'p-2',
+          buttonTheme,
+          triggerClassName
+        )}
+        aria-label={ariaLabel === 'Notifications' ? tx('Varsler', 'Notifications') : ariaLabel}
       >
-        <Bell className="h-6 w-6" />
+        {children || <Bell className={cn('h-6 w-6', iconClassName)} />}
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full transform translate-x-1/2 -translate-y-1/2">
+          <span
+            className={cn(
+              'absolute top-0 right-0 inline-flex items-center justify-center rounded-full bg-red-500 px-2 py-1 text-xs font-bold leading-none text-white translate-x-1/2 -translate-y-1/2',
+              badgeClassName
+            )}
+          >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -35,18 +64,25 @@ export default function NotificationBell({ theme = 'light' }: NotificationBellPr
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-20">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold text-gray-900">Notifications</h3>
+          <div
+            className={cn(
+              'absolute right-0 z-20 mt-2 w-80 rounded-lg border bg-white shadow-xl',
+              panelClassName
+            )}
+          >
+            <div className="flex items-center justify-between border-b p-4">
+              <h3 className="font-semibold text-gray-900">{tx('Varsler', 'Notifications')}</h3>
               {unreadCount > 0 && (
                 <button onClick={markAllRead} className="text-xs text-primary-600 hover:underline">
-                  Mark all read
+                  {tx('Marker alle som lest', 'Mark all read')}
                 </button>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
-                <p className="text-center text-gray-500 py-8 text-sm">No notifications</p>
+                <p className="py-8 text-center text-sm text-gray-500">
+                  {tx('Ingen varsler', 'No notifications')}
+                </p>
               ) : (
                 notifications.map((n) => (
                   <div

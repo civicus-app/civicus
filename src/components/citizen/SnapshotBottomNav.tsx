@@ -1,12 +1,16 @@
-import { Bell, FileText, Home, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguageStore } from '../../store/languageStore';
+import homeIcon from '../../assets/nav-icons/home.png';
+import policiesIcon from '../../assets/nav-icons/policies.png';
+import alertsIcon from '../../assets/nav-icons/alerts.png';
+import profileIcon from '../../assets/nav-icons/profile.png';
+import { cn } from '../../lib/utils';
 
 const items = [
-  { to: '/home', icon: Home, labelNo: 'Hjem', labelEn: 'Home' },
-  { to: '/innsikt/stemmer', icon: FileText, labelNo: 'Stemmer', labelEn: 'Votes' },
-  { to: '/innsikt/puls', icon: Bell, labelNo: 'Puls', labelEn: 'Pulse' },
-  { to: '/innsikt/profil', icon: User, labelNo: 'Profil', labelEn: 'Profile' },
+  { to: '/home', icon: homeIcon, labelNo: 'Hjem', labelEn: 'Home' },
+  { to: '/innsikt/stemmer', icon: policiesIcon, labelNo: 'Stemmer', labelEn: 'Votes' },
+  { to: '/innsikt/puls', icon: alertsIcon, labelNo: 'Puls', labelEn: 'Pulse' },
+  { to: '/innsikt/profil', icon: profileIcon, labelNo: 'Profil', labelEn: 'Profile' },
 ];
 
 export default function SnapshotBottomNav() {
@@ -14,21 +18,24 @@ export default function SnapshotBottomNav() {
   const language = useLanguageStore((state) => state.language);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 mx-auto max-w-[430px] rounded-t-[18px] border border-[#d9d9d9] bg-[#dfdfdf] px-5 py-3 lg:max-w-[700px] lg:rounded-[18px] lg:bottom-5 lg:shadow-lg">
+    <nav className="fixed bottom-3 left-1/2 z-40 w-[calc(100%-1rem)] max-w-[430px] -translate-x-1/2 rounded-[22px] border border-[#d4d9e5] bg-[#eceae6]/96 px-4 py-3 shadow-[0_18px_45px_rgba(24,43,74,0.18)] backdrop-blur lg:bottom-5 lg:max-w-[700px]">
       <ul className="grid grid-cols-4 gap-2">
-        {items.map(({ to, icon: Icon, labelNo, labelEn }) => {
+        {items.map(({ to, icon, labelNo, labelEn }) => {
           const active = pathname === to;
           return (
             <li key={to} className="text-center">
               <Link
                 to={to}
-                className="mx-auto flex flex-col items-center gap-1 rounded-md px-2 py-1 text-[#4768b1]"
+                className="mx-auto flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-[#4768b1]"
               >
                 <span
-                  className={active ? 'h-[2px] w-10 rounded-full bg-[#7d93c8]' : 'h-[2px] w-10 rounded-full bg-transparent'}
+                  className={cn(
+                    'h-[2px] w-12 rounded-full transition-colors',
+                    active ? 'bg-[#5b78bc]' : 'bg-transparent'
+                  )}
                 />
-                <Icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{language === 'en' ? labelEn : labelNo}</span>
+                <img src={icon} alt="" className="h-6 w-6 object-contain" />
+                <span className="text-[10px] font-semibold">{language === 'en' ? labelEn : labelNo}</span>
               </Link>
             </li>
           );

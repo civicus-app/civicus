@@ -42,6 +42,8 @@ export interface Database {
         Row: {
           id: string;
           name: string;
+          label_no: string | null;
+          label_en: string | null;
           description: string | null;
           icon: string | null;
           color: string | null;
@@ -55,6 +57,10 @@ export interface Database {
           id: string;
           title: string;
           description: string;
+          title_no: string | null;
+          title_en: string | null;
+          description_no: string | null;
+          description_en: string | null;
           category_id: string | null;
           status: string;
           scope: string;
@@ -62,6 +68,8 @@ export interface Database {
           end_date: string | null;
           allow_anonymous: boolean;
           video_url: string | null;
+          is_published: boolean;
+          published_at: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -356,10 +364,42 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['map_comments']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['map_comments']['Insert']>;
       };
+      app_settings: {
+        Row: {
+          id: string;
+          municipality_name: string;
+          contact_email: string | null;
+          contact_phone: string | null;
+          website: string | null;
+          ai_sentiment_enabled: boolean;
+          ai_trend_detection_enabled: boolean;
+          ai_summaries_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['app_settings']['Row'], 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['app_settings']['Insert']>;
+      };
     };
     Functions: {
       get_dashboard_metrics: {
         Args: { time_period?: string; district_filter?: string | null };
+        Returns: Json;
+      };
+      get_district_participation_metrics: {
+        Args: { time_period?: string; policy_id?: string | null };
+        Returns: Json;
+      };
+      get_policy_analytics: {
+        Args: { time_period?: string };
+        Returns: Json;
+      };
+      admin_upsert_policy_workspace: {
+        Args: { payload: Json };
+        Returns: Json;
+      };
+      admin_delete_policy_workspace: {
+        Args: { policy_id: string };
         Returns: Json;
       };
       current_auth_session_id: {

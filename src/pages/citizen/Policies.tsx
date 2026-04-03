@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import { Search, Filter, Grid, List } from 'lucide-react';
 import { usePolicies } from '../../hooks/usePolicies';
@@ -6,16 +6,23 @@ import PolicyCard from '../../components/citizen/PolicyCard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { POLICY_CATEGORIES, POLICY_STATUSES } from '../../lib/constants';
+import { POLICY_STATUSES } from '../../lib/constants';
 import { debounce } from '../../lib/utils';
+import { useLanguageStore } from '../../store/languageStore';
+import { supabase } from '../../lib/supabase';
+import type { Category } from '../../types';
+import { getCategoryLabel } from '../../lib/policyContent';
 
 export default function Policies() {
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(1);
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const debouncedSetSearch = useCallback(
     debounce((val: unknown) => setDebouncedSearch(val as string), 400),
@@ -27,6 +34,16 @@ export default function Policies() {
     debouncedSetSearch(e.target.value);
     setPage(1);
   };
+
+  useEffect(() => {
+    supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        setCategories((data || []) as Category[]);
+      });
+  }, []);
 
   const { policies, loading, total } = usePolicies({
     status: status === 'all' ? undefined : (status as 'active' | 'under_review' | 'closed'),
@@ -43,8 +60,12 @@ export default function Policies() {
       <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm px-5 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold text-[#2a4a70]">Kommunale saker</h1>
-            <p className="text-[#5b7391] text-sm mt-1">{total} saker funnet</p>
+            <h1 className="text-3xl font-semibold text-[#2a4a70]">
+              {tx('Kommunale saker', 'Municipal policies')}
+            </h1>
+            <p className="mt-1 text-sm text-[#5b7391]">
+              {tx(`${total} saker funnet`, `${total} policies found`)}
+            </p>
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -76,7 +97,7 @@ export default function Policies() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Sok i saker..."
+              placeholder={tx('Sok i saker...', 'Search policies...')}
               value={search}
               onChange={handleSearch}
               className="pl-10"
@@ -90,13 +111,17 @@ export default function Policies() {
             }}
           >
             <SelectTrigger className="w-full lg:w-[170px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={tx('Status', 'Status')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle statuser</SelectItem>
-              {POLICY_STATUSES.map((s) => (
+              <SelectItem value="all">{tx('Alle statuser', 'All statuses')}</SelectItem>
+              {POLICY_STATUSES.filter((statusOption) => statusOption.value !== 'draft').map((s) => (
                 <SelectItem key={s.value} value={s.value}>
-                  {s.label}
+                  {s.value === 'active'
+                    ? tx('Aktiv', 'Active')
+                    : s.value === 'under_review'
+                    ? tx('Under vurdering', 'Under review')
+                    : tx('Lukket', 'Closed')}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -109,13 +134,13 @@ export default function Policies() {
             }}
           >
             <SelectTrigger className="w-full lg:w-[170px]">
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder={tx('Kategori', 'Category')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle kategorier</SelectItem>
-              {POLICY_CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
+              <SelectItem value="all">{tx('Alle kategorier', 'All categories')}</SelectItem>
+              {categories.map((categoryOption) => (
+                <SelectItem key={categoryOption.id} value={categoryOption.name}>
+                  {getCategoryLabel(categoryOption, language)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -129,8 +154,8 @@ export default function Policies() {
         ) : policies.length === 0 ? (
           <div className="text-center py-16 text-[#5b7391]">
             <Filter className="h-12 w-12 mx-auto mb-3 opacity-35" />
-            <p className="text-lg font-medium">Ingen saker funnet</p>
-            <p className="text-sm mt-1">Juster filtrene dine</p>
+            <p className="text-lg font-medium">{tx('Ingen saker funnet', 'No policies found')}</p>
+            <p className="mt-1 text-sm">{tx('Juster filtrene dine', 'Adjust your filters')}</p>
           </div>
         ) : (
           <>
@@ -152,17 +177,17 @@ export default function Policies() {
                   disabled={page === 1}
                   className="px-4 py-2 text-sm border border-[#ccd8e8] rounded-md disabled:opacity-50 hover:bg-[#f3f7fc] text-[#2f4f72]"
                 >
-                  Forrige
+                  {tx('Forrige', 'Previous')}
                 </button>
                 <span className="text-sm text-[#5b7391]">
-                  Side {page} av {totalPages}
+                  {tx(`Side ${page} av ${totalPages}`, `Page ${page} of ${totalPages}`)}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
                   className="px-4 py-2 text-sm border border-[#ccd8e8] rounded-md disabled:opacity-50 hover:bg-[#f3f7fc] text-[#2f4f72]"
                 >
-                  Neste
+                  {tx('Neste', 'Next')}
                 </button>
               </div>
             )}

@@ -27,6 +27,6 @@ export const SENTIMENT_OPTIONS = [
   { value: 'negative', label: 'Negativ', emoji: '-', color: '#EF4444' },
 ] as const;
 
-export const APP_NAME = 'CIVICUS';
+export const APP_NAME = 'Civicus';
 export const MUNICIPALITY_NAME = 'Tromso Kommune';
 export const ITEMS_PER_PAGE = 10;

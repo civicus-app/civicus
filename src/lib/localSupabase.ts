@@ -1,4 +1,6 @@
 import type {
+  AppSettings,
+  AdminDistrictMetric,
   Category,
   DashboardMetrics,
   EngagementAnalytics,
@@ -11,6 +13,7 @@ import type {
   PolicyTag,
   PolicyTopic,
   PolicyUpdate,
+  AdminPolicyWorkspacePayload,
   SentimentType,
   SentimentVote,
 } from '../types/policy.types';
@@ -20,6 +23,7 @@ import type {
   VerifiedSessionSource,
 } from '../types/auth.types';
 import type { District, Profile } from '../types/user.types';
+import { DISTRICT_GEOJSON_BY_NAME } from './districtGeometry';
 
 type Role = 'citizen' | 'admin' | 'super_admin';
 
@@ -120,6 +124,7 @@ interface LocalState {
   policy_views: LocalPolicyView[];
   policy_follows: PolicyFollow[];
   notifications: Notification[];
+  app_settings: AppSettings[];
   admin_invites: LocalAdminInvite[];
   auth_email_challenges: LocalAuthEmailChallenge[];
   trusted_devices: LocalTrustedDevice[];
@@ -182,20 +187,20 @@ const createSeedState = (): LocalState => {
   const citizen2Id = makeId();
 
   const districts: District[] = [
-    { id: makeId(), name: 'Tromsoya', municipality: 'Tromso', geojson: undefined, population: 41000, created_at: now, updated_at: now },
-    { id: makeId(), name: 'Fastlandet', municipality: 'Tromso', geojson: undefined, population: 14000, created_at: now, updated_at: now },
-    { id: makeId(), name: 'Kvaloya', municipality: 'Tromso', geojson: undefined, population: 10000, created_at: now, updated_at: now },
-    { id: makeId(), name: 'Hakoya', municipality: 'Tromso', geojson: undefined, population: 400, created_at: now, updated_at: now },
+    { id: makeId(), name: 'Tromsoya', municipality: 'Tromso', geojson: DISTRICT_GEOJSON_BY_NAME.Tromsoya, population: 41000, created_at: now, updated_at: now },
+    { id: makeId(), name: 'Fastlandet', municipality: 'Tromso', geojson: DISTRICT_GEOJSON_BY_NAME.Fastlandet, population: 14000, created_at: now, updated_at: now },
+    { id: makeId(), name: 'Kvaloya', municipality: 'Tromso', geojson: DISTRICT_GEOJSON_BY_NAME.Kvaloya, population: 10000, created_at: now, updated_at: now },
+    { id: makeId(), name: 'Hakoya', municipality: 'Tromso', geojson: DISTRICT_GEOJSON_BY_NAME.Hakoya, population: 400, created_at: now, updated_at: now },
   ];
 
   const categories: Category[] = [
-    { id: makeId(), name: 'Housing', description: 'Housing development and policies', color: '#3B82F6', created_at: now },
-    { id: makeId(), name: 'Transportation', description: 'Public transport and mobility', color: '#10B981', created_at: now },
-    { id: makeId(), name: 'Environment', description: 'Environmental and climate policies', color: '#22C55E', created_at: now },
-    { id: makeId(), name: 'Education', description: 'Schools and educational initiatives', color: '#F59E0B', created_at: now },
-    { id: makeId(), name: 'Healthcare', description: 'Public health services', color: '#EF4444', created_at: now },
-    { id: makeId(), name: 'Culture', description: 'Cultural programs and facilities', color: '#8B5CF6', created_at: now },
-    { id: makeId(), name: 'Other', description: 'General municipal matters', color: '#6B7280', created_at: now },
+    { id: makeId(), name: 'Housing', label_no: 'Bolig', label_en: 'Housing', description: 'Housing development and policies', color: '#3B82F6', created_at: now },
+    { id: makeId(), name: 'Transportation', label_no: 'Transport', label_en: 'Transportation', description: 'Public transport and mobility', color: '#10B981', created_at: now },
+    { id: makeId(), name: 'Environment', label_no: 'Miljo', label_en: 'Environment', description: 'Environmental and climate policies', color: '#22C55E', created_at: now },
+    { id: makeId(), name: 'Education', label_no: 'Utdanning', label_en: 'Education', description: 'Schools and educational initiatives', color: '#F59E0B', created_at: now },
+    { id: makeId(), name: 'Healthcare', label_no: 'Helse', label_en: 'Healthcare', description: 'Public health services', color: '#EF4444', created_at: now },
+    { id: makeId(), name: 'Culture', label_no: 'Kultur', label_en: 'Culture', description: 'Cultural programs and facilities', color: '#8B5CF6', created_at: now },
+    { id: makeId(), name: 'Other', label_no: 'Annet', label_en: 'Other', description: 'General municipal matters', color: '#6B7280', created_at: now },
   ];
 
   const categoryByName = (name: string) => categories.find((category) => category.name === name)!;
@@ -205,7 +210,13 @@ const createSeedState = (): LocalState => {
     {
       id: makeId(),
       title: 'Expand Public Bus Routes in Outer Districts',
+      title_no: 'Utvid kollektivtilbudet i ytre bydeler',
+      title_en: 'Expand Public Bus Routes in Outer Districts',
       description:
+        'This proposal introduces expanded evening and weekend bus routes across Fastlandet and Kvaloya to improve accessibility for students, workers, and seniors.',
+      description_no:
+        'Dette forslaget utvider kvelds- og helgeruter pa Fastlandet og Kvaloya for a bedre tilgjengeligheten for studenter, arbeidstakere og eldre.',
+      description_en:
         'This proposal introduces expanded evening and weekend bus routes across Fastlandet and Kvaloya to improve accessibility for students, workers, and seniors.',
       category_id: categoryByName('Transportation').id,
       status: 'active',
@@ -214,6 +225,8 @@ const createSeedState = (): LocalState => {
       end_date: '2026-03-20',
       allow_anonymous: true,
       video_url: '',
+      is_published: true,
+      published_at: now,
       created_by: adminId,
       created_at: now,
       updated_at: now,
@@ -221,7 +234,13 @@ const createSeedState = (): LocalState => {
     {
       id: makeId(),
       title: 'Affordable Youth Housing Development Program',
+      title_no: 'Rimelig boligprogram for unge',
+      title_en: 'Affordable Youth Housing Development Program',
       description:
+        'The municipality is considering a mixed-income housing initiative focused on citizens aged 18-35. Feedback is requested on rent ceilings and location priorities.',
+      description_no:
+        'Kommunen vurderer et boliginitiativ for innbyggere mellom 18 og 35 ar. Vi ber om innspill pa leietak og lokasjonsprioriteringer.',
+      description_en:
         'The municipality is considering a mixed-income housing initiative focused on citizens aged 18-35. Feedback is requested on rent ceilings and location priorities.',
       category_id: categoryByName('Housing').id,
       status: 'active',
@@ -230,6 +249,8 @@ const createSeedState = (): LocalState => {
       end_date: '2026-03-10',
       allow_anonymous: true,
       video_url: '',
+      is_published: true,
+      published_at: now,
       created_by: adminId,
       created_at: now,
       updated_at: now,
@@ -237,7 +258,13 @@ const createSeedState = (): LocalState => {
     {
       id: makeId(),
       title: 'City Center Low-Emission Zone',
+      title_no: 'Lavutslippssone i sentrum',
+      title_en: 'City Center Low-Emission Zone',
       description:
+        'Introduce a phased low-emission zone in central Tromso to reduce air pollution and traffic noise. Citizens can comment on timing and implementation approach.',
+      description_no:
+        'Innfør en trinnvis lavutslippssone i sentrum for a redusere luftforurensning og trafikkstoy. Innbyggere kan kommentere tidsplan og gjennomforing.',
+      description_en:
         'Introduce a phased low-emission zone in central Tromso to reduce air pollution and traffic noise. Citizens can comment on timing and implementation approach.',
       category_id: categoryByName('Environment').id,
       status: 'under_review',
@@ -246,6 +273,8 @@ const createSeedState = (): LocalState => {
       end_date: '2026-02-01',
       allow_anonymous: false,
       video_url: '',
+      is_published: true,
+      published_at: now,
       created_by: adminId,
       created_at: now,
       updated_at: now,
@@ -253,7 +282,13 @@ const createSeedState = (): LocalState => {
     {
       id: makeId(),
       title: 'School Digital Learning Expansion',
+      title_no: 'Utvidelse av digital undervisning i skolen',
+      title_en: 'School Digital Learning Expansion',
       description:
+        'Pilot investment in digital learning tools and teacher training for upper-secondary schools. Public feedback was collected during the consultation window.',
+      description_no:
+        'Pilotinvestering i digitale laeringsverktoy og laereropplaering for videregaende skoler. Offentlig tilbakemelding ble samlet inn i horingsperioden.',
+      description_en:
         'Pilot investment in digital learning tools and teacher training for upper-secondary schools. Public feedback was collected during the consultation window.',
       category_id: categoryByName('Education').id,
       status: 'closed',
@@ -262,6 +297,8 @@ const createSeedState = (): LocalState => {
       end_date: '2025-12-01',
       allow_anonymous: true,
       video_url: '',
+      is_published: true,
+      published_at: now,
       created_by: adminId,
       created_at: now,
       updated_at: now,
@@ -269,7 +306,13 @@ const createSeedState = (): LocalState => {
     {
       id: makeId(),
       title: 'Neighborhood Cultural Hubs Funding',
+      title_no: 'Stotte til lokale kulturhus',
+      title_en: 'Neighborhood Cultural Hubs Funding',
       description:
+        'Draft proposal for decentralized cultural hub grants. Intended to increase community-led programs across districts.',
+      description_no:
+        'Utkast til desentraliserte kulturmidler for lokale kulturhus. Skal styrke innbyggerdrevne programmer pa tvers av bydeler.',
+      description_en:
         'Draft proposal for decentralized cultural hub grants. Intended to increase community-led programs across districts.',
       category_id: categoryByName('Culture').id,
       status: 'draft',
@@ -278,6 +321,8 @@ const createSeedState = (): LocalState => {
       end_date: '2026-04-15',
       allow_anonymous: true,
       video_url: '',
+      is_published: false,
+      published_at: null,
       created_by: adminId,
       created_at: now,
       updated_at: now,
@@ -554,6 +599,21 @@ const createSeedState = (): LocalState => {
     },
   ];
 
+  const app_settings: AppSettings[] = [
+    {
+      id: 'app-settings',
+      municipality_name: 'Tromso Kommune',
+      contact_email: 'contact@tromso.kommune.no',
+      contact_phone: '+47 77 79 00 00',
+      website: 'https://tromso.kommune.no',
+      ai_sentiment_enabled: true,
+      ai_trend_detection_enabled: true,
+      ai_summaries_enabled: true,
+      created_at: now,
+      updated_at: now,
+    },
+  ];
+
   return {
     auth_users,
     profiles,
@@ -571,6 +631,7 @@ const createSeedState = (): LocalState => {
     policy_views,
     policy_follows: [],
     notifications,
+    app_settings,
     admin_invites,
     auth_email_challenges: [],
     trusted_devices: [],
@@ -597,6 +658,7 @@ const normalizeState = (state: Partial<LocalState>): LocalState => ({
   policy_views: state.policy_views || [],
   policy_follows: state.policy_follows || [],
   notifications: state.notifications || [],
+  app_settings: state.app_settings || createSeedState().app_settings,
   admin_invites: state.admin_invites || [],
   auth_email_challenges: state.auth_email_challenges || [],
   trusted_devices: state.trusted_devices || [],
@@ -1252,13 +1314,21 @@ const isInsideWindow = (dateValue: string, days: number) => {
   return date >= windowStart;
 };
 
-const computeEngagementAnalytics = (state: LocalState): EngagementAnalytics[] => {
+const computePolicyAnalytics = (state: LocalState, timePeriod = '30d'): EngagementAnalytics[] => {
+  const days = parseRelativeDays(timePeriod);
+
   return state.policies
     .filter((policy) => policy.status !== 'draft')
     .map((policy) => {
-      const votes = state.sentiment_votes.filter((vote) => vote.policy_id === policy.id);
-      const feedback = state.feedback.filter((item) => item.policy_id === policy.id);
-      const views = state.policy_views.filter((view) => view.policy_id === policy.id);
+      const votes = state.sentiment_votes.filter(
+        (vote) => vote.policy_id === policy.id && isInsideWindow(vote.created_at, days)
+      );
+      const feedback = state.feedback.filter(
+        (item) => item.policy_id === policy.id && isInsideWindow(item.created_at, days)
+      );
+      const views = state.policy_views.filter(
+        (view) => view.policy_id === policy.id && isInsideWindow(view.viewed_at, days)
+      );
 
       const votesUsers = new Set(votes.map((vote) => vote.user_id));
       const feedbackUsers = new Set(feedback.map((item) => item.user_id).filter(Boolean) as string[]);
@@ -1272,8 +1342,9 @@ const computeEngagementAnalytics = (state: LocalState): EngagementAnalytics[] =>
 
       return {
         policy_id: policy.id,
-        title: policy.title,
+        title: policy.title_en || policy.title_no || policy.title,
         status: policy.status,
+        is_published: policy.is_published ?? false,
         views_count: viewUsers.size,
         votes_count: votesUsers.size,
         feedback_count: feedbackUsers.size,
@@ -1285,6 +1356,9 @@ const computeEngagementAnalytics = (state: LocalState): EngagementAnalytics[] =>
       };
     });
 };
+
+const computeEngagementAnalytics = (state: LocalState): EngagementAnalytics[] =>
+  computePolicyAnalytics(state, '90d');
 
 const computeDashboardMetrics = (state: LocalState, timePeriod = '30d'): DashboardMetrics => {
   const days = parseRelativeDays(timePeriod);
@@ -1328,7 +1402,7 @@ const computeDashboardMetrics = (state: LocalState, timePeriod = '30d'): Dashboa
   const topIssueTitle = state.policies.find((policy) => policy.id === topIssueId)?.title || 'N/A';
 
   return {
-    active_policies: state.policies.filter((policy) => policy.status === 'active').length,
+    active_policies: state.policies.filter((policy) => policy.status === 'active' && policy.is_published !== false).length,
     total_participants: participantIds.size,
     engagement_rate: viewedIds.size
       ? Number(((interactedIds.size / viewedIds.size) * 100).toFixed(2))
@@ -1350,6 +1424,156 @@ const computeDashboardMetrics = (state: LocalState, timePeriod = '30d'): Dashboa
       negative: votesWindow.filter((vote) => vote.sentiment === 'negative').length,
     },
   };
+};
+
+const computeDistrictMetrics = (
+  state: LocalState,
+  timePeriod = '30d',
+  policyId?: string | null
+): AdminDistrictMetric[] => {
+  const days = parseRelativeDays(timePeriod);
+  const districtEntries = state.districts.map((district) => ({
+    district_id: district.id,
+    district_name: district.name,
+    geojson: district.geojson || null,
+    participants: 0,
+    views: 0,
+    votes: 0,
+    feedback: 0,
+  }));
+
+  const byId = new Map(districtEntries.map((entry) => [entry.district_id, entry]));
+  const profileDistrict = new Map(
+    state.profiles.filter((profile) => profile.district_id).map((profile) => [profile.id, profile.district_id as string])
+  );
+
+  state.policy_views.forEach((view) => {
+    if (!isInsideWindow(view.viewed_at, days)) return;
+    if (policyId && view.policy_id !== policyId) return;
+    const districtId = profileDistrict.get(view.user_id);
+    if (!districtId) return;
+    const item = byId.get(districtId);
+    if (item) item.views += 1;
+  });
+
+  state.sentiment_votes.forEach((vote) => {
+    if (!isInsideWindow(vote.created_at, days)) return;
+    if (policyId && vote.policy_id !== policyId) return;
+    const districtId = profileDistrict.get(vote.user_id);
+    if (!districtId) return;
+    const item = byId.get(districtId);
+    if (item) item.votes += 1;
+  });
+
+  state.feedback.forEach((item) => {
+    if (!item.user_id || !isInsideWindow(item.created_at, days)) return;
+    if (policyId && item.policy_id !== policyId) return;
+    const districtId = profileDistrict.get(item.user_id);
+    if (!districtId) return;
+    const metric = byId.get(districtId);
+    if (metric) metric.feedback += 1;
+  });
+
+  districtEntries.forEach((entry) => {
+    entry.participants = entry.views + entry.votes + entry.feedback;
+  });
+
+  return districtEntries;
+};
+
+const upsertPolicyWorkspaceLocal = (state: LocalState, payload: AdminPolicyWorkspacePayload, userId?: string | null) => {
+  const now = nowIso();
+  const incoming = payload.policy;
+  const policyId = incoming.id || makeId();
+  const existing = state.policies.find((policy) => policy.id === policyId);
+  const persistedPolicy: Policy = {
+    ...(existing || (createInsertRow('policies', {}) as Policy)),
+    ...existing,
+    ...incoming,
+    id: policyId,
+    title: incoming.title_no || incoming.title || incoming.title_en || '',
+    description: incoming.description_no || incoming.description || incoming.description_en || '',
+    title_no: incoming.title_no || incoming.title || '',
+    title_en: incoming.title_en || '',
+    description_no: incoming.description_no || incoming.description || '',
+    description_en: incoming.description_en || '',
+    is_published: incoming.is_published ?? false,
+    published_at:
+      incoming.is_published
+        ? incoming.published_at || existing?.published_at || now
+        : null,
+    created_by: existing?.created_by || incoming.created_by || userId || null,
+    created_at: existing?.created_at || now,
+    updated_at: now,
+  };
+
+  if (existing) {
+    Object.assign(existing, persistedPolicy);
+  } else {
+    state.policies.push(persistedPolicy);
+  }
+
+  state.policy_districts = state.policy_districts.filter((item) => item.policy_id !== policyId);
+  payload.district_ids.forEach((districtId) => {
+    state.policy_districts.push({ policy_id: policyId, district_id: districtId });
+  });
+
+  state.policy_tags = state.policy_tags.filter((item) => item.policy_id !== policyId);
+  payload.tags.forEach((tag) => {
+    if (!tag.trim()) return;
+    state.policy_tags.push({
+      id: makeId(),
+      policy_id: policyId,
+      tag: tag.trim(),
+      created_at: now,
+    });
+  });
+
+  state.policy_topics = state.policy_topics.filter((item) => item.policy_id !== policyId);
+  payload.topics.forEach((topic, index) => {
+    state.policy_topics.push({
+      id: topic.id || makeId(),
+      policy_id: policyId,
+      slug: topic.slug,
+      label_no: topic.label_no,
+      label_en: topic.label_en,
+      description_no: topic.description_no || '',
+      description_en: topic.description_en || '',
+      icon_key: topic.icon_key || '',
+      sort_order: topic.sort_order ?? index,
+      created_at: topic.created_at || now,
+    });
+  });
+
+  state.policy_updates = state.policy_updates.filter((item) => item.policy_id !== policyId);
+  payload.updates.forEach((update) => {
+    state.policy_updates.push({
+      id: update.id || makeId(),
+      policy_id: policyId,
+      title: update.title,
+      content: update.content,
+      update_type: update.update_type || 'info',
+      created_by: update.created_by || userId || null,
+      created_at: update.created_at || now,
+    });
+  });
+
+  state.events = state.events.filter((item) => item.policy_id !== policyId);
+  payload.events.forEach((event) => {
+    state.events.push({
+      id: event.id || makeId(),
+      policy_id: policyId,
+      title: event.title,
+      description: event.description || '',
+      event_date: event.event_date,
+      location: event.location || '',
+      mode: event.mode,
+      registration_url: event.registration_url || '',
+      created_at: event.created_at || now,
+    });
+  });
+
+  return persistedPolicy;
 };
 
 const parseFilter = (filter?: string) => {
@@ -1748,6 +1972,37 @@ const createInsertRow = (table: string, value: any) => {
       status: 'draft',
       scope: 'municipality',
       video_url: '',
+      title_no: base.title_no || base.title || '',
+      title_en: base.title_en || '',
+      description_no: base.description_no || base.description || '',
+      description_en: base.description_en || '',
+      is_published: base.is_published ?? false,
+      published_at: base.published_at ?? null,
+      ...base,
+      created_at: base.created_at || now,
+      updated_at: now,
+    };
+  }
+
+  if (table === 'categories') {
+    return {
+      label_no: base.label_no || base.name || '',
+      label_en: base.label_en || base.name || '',
+      ...base,
+      created_at: base.created_at || now,
+    };
+  }
+
+  if (table === 'app_settings') {
+    return {
+      id: base.id || 'app-settings',
+      municipality_name: base.municipality_name || 'Tromso Kommune',
+      contact_email: base.contact_email ?? null,
+      contact_phone: base.contact_phone ?? null,
+      website: base.website ?? null,
+      ai_sentiment_enabled: base.ai_sentiment_enabled ?? true,
+      ai_trend_detection_enabled: base.ai_trend_detection_enabled ?? true,
+      ai_summaries_enabled: base.ai_summaries_enabled ?? true,
       ...base,
       created_at: base.created_at || now,
       updated_at: now,
@@ -1948,6 +2203,53 @@ export const createLocalSupabaseClient = () => {
         const period = typeof args.time_period === 'string' ? args.time_period : '30d';
         const metrics = computeDashboardMetrics(state, period);
         return { data: metrics, error: null };
+      }
+
+      if (name === 'get_district_participation_metrics') {
+        const state = loadState();
+        const period = typeof args.time_period === 'string' ? args.time_period : '30d';
+        const data = computeDistrictMetrics(
+          state,
+          period,
+          typeof args.policy_id === 'string' ? args.policy_id : null
+        );
+        return { data, error: null };
+      }
+
+      if (name === 'get_policy_analytics') {
+        const state = loadState();
+        const period = typeof args.time_period === 'string' ? args.time_period : '30d';
+        return { data: computePolicyAnalytics(state, period), error: null };
+      }
+
+      if (name === 'admin_upsert_policy_workspace') {
+        const state = deepClone(loadState());
+        const sessionState = loadSessionState();
+        const policy = upsertPolicyWorkspaceLocal(
+          state,
+          (args.payload || {}) as AdminPolicyWorkspacePayload,
+          sessionState?.user_id
+        );
+        saveState(state);
+        return { data: policy, error: null };
+      }
+
+      if (name === 'admin_delete_policy_workspace') {
+        const state = deepClone(loadState());
+        const policyId = String(args.policy_id || '');
+        state.policies = state.policies.filter((policy) => policy.id !== policyId);
+        state.policy_districts = state.policy_districts.filter((item) => item.policy_id !== policyId);
+        state.policy_tags = state.policy_tags.filter((item) => item.policy_id !== policyId);
+        state.policy_attachments = state.policy_attachments.filter((item) => item.policy_id !== policyId);
+        state.policy_topics = state.policy_topics.filter((item) => item.policy_id !== policyId);
+        state.policy_updates = state.policy_updates.filter((item) => item.policy_id !== policyId);
+        state.events = state.events.filter((item) => item.policy_id !== policyId);
+        state.feedback = state.feedback.filter((item) => item.policy_id !== policyId);
+        state.sentiment_votes = state.sentiment_votes.filter((item) => item.policy_id !== policyId);
+        state.policy_views = state.policy_views.filter((item) => item.policy_id !== policyId);
+        state.policy_follows = state.policy_follows.filter((item) => item.policy_id !== policyId);
+        saveState(state);
+        return { data: { success: true }, error: null };
       }
 
       return { data: null, error: { message: `RPC ${name} is not available in local mode` } };

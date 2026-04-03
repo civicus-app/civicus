@@ -1,17 +1,23 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, FileText, User, LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import NotificationBell from '../common/NotificationBell';
+import LanguageToggle from '../common/LanguageToggle';
 import BrandMark from '../common/BrandMark';
-import { APP_NAME, MUNICIPALITY_NAME } from '../../lib/constants';
+import CitizenBottomNav from '../citizen/CitizenBottomNav';
+import { APP_NAME } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import { useLanguageStore } from '../../store/languageStore';
+import homeIcon from '../../assets/nav-icons/home.png';
+import policiesIcon from '../../assets/nav-icons/policies.png';
+import alertsIcon from '../../assets/nav-icons/alerts.png';
+import profileIcon from '../../assets/nav-icons/profile.png';
 
 const navLinks = [
-  { to: '/home', labelNo: 'Hjem', labelEn: 'Home', icon: Home },
-  { to: '/policies', labelNo: 'Politikk', labelEn: 'Policies', icon: FileText },
-  { to: '/profile', labelNo: 'Profil', labelEn: 'Profile', icon: User },
+  { to: '/home', labelNo: 'Hjem', labelEn: 'Home', icon: homeIcon },
+  { to: '/policies', labelNo: 'Politikk', labelEn: 'Policies', icon: policiesIcon },
+  { to: '/profile', labelNo: 'Profil', labelEn: 'Profile', icon: profileIcon },
 ];
 
 export default function CitizenLayout() {
@@ -50,35 +56,51 @@ export default function CitizenLayout() {
                   {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
 
-                <BrandMark className="h-11 w-11 rounded-full border-white/45 bg-white/20" />
-                <div className="min-w-0">
-                  <h1 className="text-white font-semibold text-[1.1rem] sm:text-[1.35rem] leading-tight truncate font-display">
-                    {APP_NAME}{' '}
-                    <span className="font-normal text-white/80">{MUNICIPALITY_NAME}</span>
-                  </h1>
-                </div>
+                <Link
+                  to="/home"
+                  className="flex min-w-0 items-center gap-3 rounded-full pr-2 transition-opacity hover:opacity-90"
+                  aria-label={tx('Ga til hjem', 'Go to home')}
+                >
+                  <BrandMark
+                    className="h-12 w-12 rounded-full border-white/45 bg-white/20 p-[4%] sm:h-[3.15rem] sm:w-[3.15rem]"
+                    imageClassName="scale-[1.08]"
+                  />
+                  <div className="min-w-0">
+                    <h1 className="text-white font-semibold text-[1.1rem] sm:text-[1.35rem] leading-tight truncate font-display">
+                      {APP_NAME}
+                    </h1>
+                  </div>
+                </Link>
               </div>
 
-              <nav className="hidden md:flex items-center gap-1">
-                {navLinks.map(({ to, labelNo, labelEn, icon: Icon }) => (
+              <nav className="hidden md:flex items-center gap-2 rounded-[22px] border border-white/18 bg-white/10 p-1.5 backdrop-blur">
+                {navLinks.map(({ to, labelNo, labelEn, icon }) => (
                   <Link
                     key={to}
                     to={to}
                     className={cn(
-                      'flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors',
                       location.pathname === to
-                        ? 'bg-white/20 text-white'
-                        : 'text-white/85 hover:bg-white/10 hover:text-white'
+                        ? 'bg-white text-[#265699] shadow-[0_10px_25px_rgba(17,44,85,0.18)]'
+                        : 'text-white/90 hover:bg-white/10 hover:text-white'
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <img src={icon} alt="" className="h-5 w-5 object-contain" />
                     <span>{language === 'en' ? labelEn : labelNo}</span>
                   </Link>
                 ))}
               </nav>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <NotificationBell theme="dark" />
+                <LanguageToggle className="hidden sm:block border-white/20 bg-white/10 shadow-none" />
+
+                <NotificationBell
+                  theme="dark"
+                  triggerClassName="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10"
+                  badgeClassName="right-0 top-0 min-w-[1rem] px-1.5 py-0.5 text-[10px]"
+                >
+                  <img src={alertsIcon} alt="" className="h-5 w-5 object-contain" />
+                </NotificationBell>
 
                 {isAdmin && (
                   <Link
@@ -112,7 +134,10 @@ export default function CitizenLayout() {
 
           {mobileOpen && (
             <div className="md:hidden border-t border-white/20 bg-[#275da5]">
-              {navLinks.map(({ to, labelNo, labelEn, icon: Icon }) => (
+              <div className="px-4 pt-4">
+                <LanguageToggle className="inline-flex border-white/20 bg-white/10 shadow-none" />
+              </div>
+              {navLinks.map(({ to, labelNo, labelEn, icon }) => (
                 <Link
                   key={to}
                   to={to}
@@ -124,7 +149,7 @@ export default function CitizenLayout() {
                       : 'text-white/90 hover:bg-white/10'
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <img src={icon} alt="" className="h-4 w-4 object-contain" />
                   <span>{language === 'en' ? labelEn : labelNo}</span>
                 </Link>
               ))}
@@ -145,10 +170,12 @@ export default function CitizenLayout() {
 
       <main className={cn(
         'mx-auto px-4 py-5 sm:py-6',
-        hideTopNavigation ? 'max-w-[1400px] pb-10 sm:px-6 lg:px-10' : 'max-w-[1500px] sm:px-6 lg:px-8'
+        hideTopNavigation ? 'max-w-[1400px] pb-10 sm:px-6 lg:px-10' : 'max-w-[1500px] pb-28 sm:px-6 md:pb-6 lg:px-8'
       )}>
         <Outlet />
       </main>
+
+      {!hideTopNavigation ? <CitizenBottomNav /> : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Policy, PolicyStatus } from '../types/policy.types';
+import { isCitizenVisiblePolicy } from '../lib/policyContent';
 
 interface UsePoliciesOptions {
   status?: PolicyStatus | 'all';
@@ -29,6 +30,8 @@ export const usePolicies = (options: UsePoliciesOptions = {}) => {
         query = query.in('status', ['active', 'under_review', 'closed']);
       }
 
+      query = query.eq('is_published', true);
+
       if (options.category) {
         const { data: cat } = await supabase
           .from('categories')
@@ -38,14 +41,15 @@ export const usePolicies = (options: UsePoliciesOptions = {}) => {
         if (cat) query = query.eq('category_id', cat.id);
       }
 
-      if (options.search) {
-        query = query.ilike('title', `%${options.search}%`);
+      if (!options.search) {
+        const limit = options.limit || 12;
+        const page = options.page || 1;
+        const from = (page - 1) * limit;
+        query = query.range(from, from + limit - 1);
+      } else {
+        query = query.limit(250);
       }
-
-      const limit = options.limit || 12;
-      const page = options.page || 1;
-      const from = (page - 1) * limit;
-      query = query.range(from, from + limit - 1).order('created_at', { ascending: false });
+      query = query.order('created_at', { ascending: false });
 
       const { data, error, count } = await query;
       if (error) throw error;
@@ -53,8 +57,23 @@ export const usePolicies = (options: UsePoliciesOptions = {}) => {
         ...policy,
         category: policy.category || policy.categories || null,
       }));
-      setPolicies(normalized as Policy[]);
-      setTotal(count || 0);
+      let visiblePolicies = normalized.filter((policy) => isCitizenVisiblePolicy(policy as Policy));
+      if (options.search) {
+        const needle = options.search.trim().toLowerCase();
+        visiblePolicies = visiblePolicies.filter((policy) =>
+          [policy.title, policy.title_no, policy.title_en, policy.description, policy.description_no, policy.description_en]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(needle))
+        );
+        const limit = options.limit || 12;
+        const page = options.page || 1;
+        const from = (page - 1) * limit;
+        setPolicies(visiblePolicies.slice(from, from + limit) as Policy[]);
+        setTotal(visiblePolicies.length);
+      } else {
+        setPolicies(visiblePolicies as Policy[]);
+        setTotal(count || visiblePolicies.length);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch policies');
     } finally {
@@ -103,7 +122,11 @@ export const usePolicy = (id: string) => {
           ),
           districts: (data as any)?.districts || (data as any)?.policy_districts || [],
         };
-        setPolicy(normalized as Policy);
+        if (!isCitizenVisiblePolicy(normalized as Policy)) {
+          setPolicy(null);
+        } else {
+          setPolicy(normalized as Policy);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch policy');
       } finally {

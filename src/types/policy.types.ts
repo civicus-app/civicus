@@ -9,6 +9,8 @@ export type ModerationStatus = 'open' | 'reviewed' | 'resolved' | 'dismissed';
 export interface Category {
   id: string;
   name: string;
+  label_no?: string;
+  label_en?: string;
   description?: string;
   icon?: string;
   color?: string;
@@ -19,6 +21,10 @@ export interface Policy {
   id: string;
   title: string;
   description: string;
+  title_no?: string;
+  title_en?: string;
+  description_no?: string;
+  description_en?: string;
   category_id?: string;
   status: PolicyStatus;
   scope: PolicyScope;
@@ -26,6 +32,8 @@ export interface Policy {
   end_date?: string;
   allow_anonymous: boolean;
   video_url?: string;
+  is_published?: boolean;
+  published_at?: string | null;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -219,6 +227,7 @@ export interface EngagementAnalytics {
   policy_id: string;
   title: string;
   status: PolicyStatus;
+  is_published?: boolean;
   views_count: number;
   votes_count: number;
   feedback_count: number;
@@ -227,4 +236,46 @@ export interface EngagementAnalytics {
   positive_count: number;
   neutral_count: number;
   negative_count: number;
+}
+
+export interface AppSettings {
+  id: string;
+  municipality_name: string;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  website?: string | null;
+  ai_sentiment_enabled: boolean;
+  ai_trend_detection_enabled: boolean;
+  ai_summaries_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminDistrictMetric {
+  district_id: string;
+  district_name: string;
+  geojson?: Record<string, unknown> | null;
+  participants: number;
+  views: number;
+  votes: number;
+  feedback: number;
+}
+
+export interface AdminPolicyWorkspace {
+  policy: Policy;
+  districts: string[];
+  topics: PolicyTopic[];
+  updates: PolicyUpdate[];
+  events: Event[];
+  tags: PolicyTag[];
+  attachments: PolicyAttachment[];
+}
+
+export interface AdminPolicyWorkspacePayload {
+  policy: Omit<Policy, 'created_at' | 'updated_at' | 'category' | 'tags' | 'attachments' | 'districts' | 'topics' | 'updates' | 'events'>;
+  district_ids: string[];
+  topics: Array<Partial<PolicyTopic> & Pick<PolicyTopic, 'slug' | 'label_no' | 'label_en'>>;
+  updates: Array<Partial<PolicyUpdate> & Pick<PolicyUpdate, 'title' | 'content'>>;
+  events: Array<Partial<Event> & Pick<Event, 'title' | 'event_date' | 'mode'>>;
+  tags: string[];
 }

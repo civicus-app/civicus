@@ -1,10 +1,20 @@
+import { cn } from '../../lib/utils';
 import { useLanguageStore } from '../../store/languageStore';
 
-export default function LanguageToggle() {
+interface LanguageToggleProps {
+  className?: string;
+}
+
+export default function LanguageToggle({ className }: LanguageToggleProps) {
   const { language, setLanguage } = useLanguageStore();
 
   return (
-    <div className="fixed right-3 top-3 z-[70] rounded-full border border-[#a9b8c6] bg-white/95 p-1 shadow-md backdrop-blur lg:right-5 lg:top-5">
+    <div
+      className={cn(
+        'rounded-full border border-[#a9b8c6] bg-white/95 p-1 shadow-md backdrop-blur',
+        className
+      )}
+    >
       <div className="flex items-center gap-1">
         <button
           onClick={() => setLanguage('no')}

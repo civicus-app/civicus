@@ -39,7 +39,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "bootstrap:accounts": "node scripts/bootstrap-default-accounts.mjs"
+    "bootstrap:accounts": "node scripts/bootstrap-default-accounts.mjs",
+    "bootstrap:demo-data": "node scripts/bootstrap-demo-data.mjs",
+    "smoke:e2e": "node scripts/smoke-full-app.mjs"
   },
   "devDependencies": {
     "@types/react": "^18.3.20",

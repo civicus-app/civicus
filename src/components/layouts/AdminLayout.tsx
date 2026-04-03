@@ -1,18 +1,29 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
-import { Search, LogOut } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import NotificationBell from '../common/NotificationBell';
-import BrandMark from '../common/BrandMark';
-import { MUNICIPALITY_NAME, TIME_PERIODS } from '../../lib/constants';
-import { useLanguageStore } from '../../store/languageStore';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+  BarChart3,
+  FileStack,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Settings,
+  Users,
+  X,
+} from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import LanguageToggle from '../common/LanguageToggle';
+import BrandMark from '../common/BrandMark';
+import { APP_NAME } from '../../lib/constants';
+import { useLanguageStore } from '../../store/languageStore';
+import { cn } from '../../lib/utils';
+
+const navItems = [
+  { to: '/admin', icon: LayoutDashboard, labelNo: 'Oversikt', labelEn: 'Dashboard' },
+  { to: '/admin/policies', icon: FileStack, labelNo: 'Saker', labelEn: 'Policies' },
+  { to: '/admin/analytics', icon: BarChart3, labelNo: 'Analyse', labelEn: 'Analytics' },
+  { to: '/admin/users', icon: Users, labelNo: 'Brukere', labelEn: 'Users' },
+  { to: '/admin/settings', icon: Settings, labelNo: 'Innstillinger', labelEn: 'Settings' },
+];
 
 export interface AdminOutletContext {
   timePeriod: string;
@@ -25,12 +36,11 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const language = useLanguageStore((state) => state.language);
   const tx = (no: string, en: string) => (language === 'en' ? en : no);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState('30d');
 
-  const isDashboard = location.pathname === '/admin';
-
   const initials = useMemo(() => {
-    const name = profile?.full_name || tx('Administrator', 'Admin User');
+    const name = profile?.full_name || tx('Administrator', 'Admin');
     const parts = name.split(' ').filter(Boolean);
     return (parts[0]?.[0] || 'A') + (parts[1]?.[0] || '');
   }, [profile?.full_name, tx]);
@@ -41,74 +51,137 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#e9eef6]">
-      <header className="bg-gradient-to-r from-[#1f4f92] via-[#2d66b4] to-[#3b79c9] shadow-lg sticky top-0 z-40 border-b border-white/20">
-        <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-[76px] flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <BrandMark className="h-11 w-11 rounded-full border-white/45 bg-white/20" />
+    <div className="min-h-screen bg-[#eef3f8]">
+      <div className="flex min-h-screen">
+        <aside
+          className={cn(
+            'fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-[#d8e2ef] bg-white px-5 py-5 shadow-[0_20px_60px_rgba(40,73,118,0.08)] transition-transform md:static md:translate-x-0',
+            mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <Link to="/admin" className="flex items-center gap-3">
+              <BrandMark
+                className="h-12 w-12 rounded-full border-[#d1deed] bg-[#f7fafc] p-[4%]"
+                imageClassName="scale-[1.06]"
+              />
+              <div>
+                <p className="text-base font-semibold text-[#173151]">{APP_NAME}</p>
+                <p className="text-xs text-[#6b7f99]">{tx('Administrasjon', 'Administration')}</p>
+              </div>
+            </Link>
+
+            <button
+              className="rounded-full p-2 text-[#537197] hover:bg-[#eef3f8] md:hidden"
+              onClick={() => setMobileOpen(false)}
+              aria-label={tx('Lukk meny', 'Close menu')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="mt-6 rounded-[24px] border border-[#d8e2ef] bg-[#f5f8fb] p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#24589d] text-sm font-semibold text-white">
+                {initials}
+              </div>
               <div className="min-w-0">
-                <h1 className="text-white font-semibold text-[1.1rem] sm:text-[1.45rem] leading-tight truncate">
-                  {MUNICIPALITY_NAME}{' '}
-                  <span className="font-normal text-white/80">{tx('Administrasjon', 'Administration')}</span>
-                </h1>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              {isDashboard && (
-                <Select value={timePeriod} onValueChange={setTimePeriod}>
-                  <SelectTrigger className="w-[180px] bg-white/95 border-white/20 shadow-sm text-slate-700 hidden sm:flex">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_PERIODS.map((period) => (
-                      <SelectItem key={period.value} value={period.value}>
-                        {period.value === '7d'
-                          ? tx('Siste 7 dager', 'Last 7 days')
-                          : period.value === '30d'
-                          ? tx('Siste 30 dager', 'Last 30 days')
-                          : tx('Siste 90 dager', 'Last 90 days')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              <button
-                className="h-10 w-10 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label={tx('Sok', 'Search')}
-              >
-                <Search className="h-5 w-5" />
-              </button>
-
-              <NotificationBell theme="dark" />
-
-              <div className="hidden md:flex items-center gap-2 px-2 py-1 rounded-full bg-white/10 border border-white/20">
-                <div className="h-8 w-8 rounded-full bg-white text-[#275ca4] flex items-center justify-center text-xs font-semibold">
-                  {initials}
-                </div>
-                <span className="text-white text-sm font-medium max-w-[160px] truncate">
+                <p className="truncate text-sm font-semibold text-[#173151]">
                   {profile?.full_name || tx('Administrator', 'Administrator')}
-                </span>
+                </p>
+                <p className="truncate text-xs text-[#6b7f99]">{profile?.email}</p>
               </div>
-
-              <button
-                onClick={handleSignOut}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
-                title={tx('Logg ut', 'Sign out')}
-              >
-                <LogOut className="h-5 w-5" />
-                <span>{tx('Logg ut', 'Sign out')}</span>
-              </button>
             </div>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-        <Outlet context={{ timePeriod, setTimePeriod }} />
-      </main>
+          <nav className="mt-6 space-y-1.5">
+            {navItems.map(({ to, icon: Icon, labelNo, labelEn }) => {
+              const active = location.pathname === to || (to !== '/admin' && location.pathname.startsWith(to));
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-[#24589d] text-white shadow-[0_14px_30px_rgba(36,88,157,0.24)]'
+                      : 'text-[#365476] hover:bg-[#eef3f8] hover:text-[#173151]'
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{language === 'en' ? labelEn : labelNo}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-auto space-y-3 pt-6">
+            <LanguageToggle className="inline-flex shadow-none" />
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d8e2ef] px-4 py-3 text-sm font-medium text-[#365476] transition-colors hover:bg-[#eef3f8]"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>{tx('Logg ut', 'Sign out')}</span>
+            </button>
+          </div>
+        </aside>
+
+        {mobileOpen ? (
+          <button
+            className="fixed inset-0 z-40 bg-[#10233d]/30 md:hidden"
+            onClick={() => setMobileOpen(false)}
+            aria-label={tx('Lukk administrasjonsmeny', 'Close admin menu')}
+          />
+        ) : null}
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 border-b border-[#d8e2ef] bg-white/90 px-4 py-4 backdrop-blur md:px-8">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <button
+                  className="rounded-full border border-[#d8e2ef] bg-white p-2 text-[#365476] shadow-sm md:hidden"
+                  onClick={() => setMobileOpen(true)}
+                  aria-label={tx('Apen meny', 'Open menu')}
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6b7f99]">
+                    {tx('Adminarbeidsflate', 'Admin workspace')}
+                  </p>
+                  <h1 className="text-xl font-semibold text-[#173151]">
+                    {navItems.find((item) => location.pathname === item.to || (item.to !== '/admin' && location.pathname.startsWith(item.to)))?.[
+                      language === 'en' ? 'labelEn' : 'labelNo'
+                    ] || tx('Oversikt', 'Dashboard')}
+                  </h1>
+                </div>
+              </div>
+
+              <div className="hidden md:flex items-center gap-3 rounded-full border border-[#d8e2ef] bg-white px-3 py-2 shadow-sm">
+                <span className="text-xs font-medium uppercase tracking-[0.2em] text-[#6b7f99]">
+                  {tx('Periode', 'Period')}
+                </span>
+                <select
+                  value={timePeriod}
+                  onChange={(event) => setTimePeriod(event.target.value)}
+                  className="bg-transparent text-sm font-medium text-[#173151] focus:outline-none"
+                >
+                  <option value="7d">{tx('7 dager', '7 days')}</option>
+                  <option value="30d">{tx('30 dager', '30 days')}</option>
+                  <option value="90d">{tx('90 dager', '90 days')}</option>
+                </select>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 px-4 py-5 md:px-8 md:py-8">
+            <Outlet context={{ timePeriod, setTimePeriod }} />
+          </main>
+        </div>
+      </div>
     </div>
   );
 }

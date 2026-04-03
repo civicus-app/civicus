@@ -40,11 +40,9 @@ export const useDashboard = (timePeriod = '30d') => {
       setMetrics(data as DashboardMetrics);
 
       const { data: analyticsData, error: analyticsError } = await supabase
-        .from('engagement_analytics')
-        .select('*')
-        .order('engaged_users', { ascending: false });
+        .rpc('get_policy_analytics', { time_period: timePeriod });
       if (analyticsError) throw analyticsError;
-      setAnalytics((analyticsData || []) as EngagementAnalytics[]);
+      setAnalytics(((analyticsData as any[]) || []) as EngagementAnalytics[]);
       setError(null);
     } catch (err) {
       setMetrics(EMPTY_METRICS);
