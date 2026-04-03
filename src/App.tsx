@@ -1,12 +1,12 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import LanguageToggle from './components/common/LanguageToggle';
 
 const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'));
 const CitizenLayout = lazy(() => import('./components/layouts/CitizenLayout'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminPolicies = lazy(() => import('./pages/admin/Policies'));
+const PolicyEditor = lazy(() => import('./pages/admin/PolicyEditor'));
 const Analytics = lazy(() => import('./pages/admin/Analytics'));
 const Users = lazy(() => import('./pages/admin/Users'));
 const Settings = lazy(() => import('./pages/admin/Settings'));
@@ -40,56 +40,55 @@ function RouteFallback() {
 
 export default function App() {
   return (
-    <>
-      <LanguageToggle />
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-          <Route
-            element={
-              <ProtectedRoute>
-                <CitizenLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/home" element={<Home />} />
-            <Route path="/policies" element={<Policies />} />
-            <Route path="/policies/:id" element={<TopicSelectionPage />} />
-            <Route path="/policies/:id/topic/:topic" element={<TopicOverviewPage />} />
-            <Route path="/policies/:id/topic/:topic/chat" element={<AiChatPage />} />
-            <Route path="/policies/:id/topic/:topic/utdrag" element={<ExtractSummaryPage />} />
-            <Route path="/policies/:id/verifisering" element={<VerificationGatePage />} />
-            <Route path="/policies/:id/tilbakemelding" element={<FeedbackSentimentPage />} />
-            <Route path="/policies/:id/suksess" element={<SubmissionSuccessPage />} />
-            <Route path="/policies/:id/klassisk" element={<PolicyDetailPage />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/innsikt/stemmer" element={<VotesSnapshotPage />} />
-            <Route path="/innsikt/profil" element={<ProfileProgressSnapshotPage />} />
-            <Route path="/innsikt/puls" element={<CommunityPulseSnapshotPage />} />
-            <Route path="/verifisering/callback" element={<VerificationCallbackPage />} />
-          </Route>
+        <Route
+          element={
+            <ProtectedRoute>
+              <CitizenLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/home" element={<Home />} />
+          <Route path="/policies" element={<Policies />} />
+          <Route path="/policies/:id" element={<PolicyDetailPage />} />
+          <Route path="/policies/:id/utforsk" element={<TopicSelectionPage />} />
+          <Route path="/policies/:id/topic/:topic" element={<TopicOverviewPage />} />
+          <Route path="/policies/:id/topic/:topic/chat" element={<AiChatPage />} />
+          <Route path="/policies/:id/topic/:topic/utdrag" element={<ExtractSummaryPage />} />
+          <Route path="/policies/:id/verifisering" element={<VerificationGatePage />} />
+          <Route path="/policies/:id/tilbakemelding" element={<FeedbackSentimentPage />} />
+          <Route path="/policies/:id/suksess" element={<SubmissionSuccessPage />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/innsikt/stemmer" element={<VotesSnapshotPage />} />
+          <Route path="/innsikt/profil" element={<ProfileProgressSnapshotPage />} />
+          <Route path="/innsikt/puls" element={<CommunityPulseSnapshotPage />} />
+          <Route path="/verifisering/callback" element={<VerificationCallbackPage />} />
+        </Route>
 
-          <Route
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/admin" element={<Dashboard />} />
-            <Route path="/admin/policies" element={<AdminPolicies />} />
-            <Route path="/admin/analytics" element={<Analytics />} />
-            <Route path="/admin/users" element={<Users />} />
-            <Route path="/admin/settings" element={<Settings />} />
-          </Route>
+        <Route
+          element={
+            <ProtectedRoute requireAdmin>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/admin" element={<Dashboard />} />
+          <Route path="/admin/policies" element={<AdminPolicies />} />
+          <Route path="/admin/policies/new" element={<PolicyEditor />} />
+          <Route path="/admin/policies/:id/edit" element={<PolicyEditor />} />
+          <Route path="/admin/analytics" element={<Analytics />} />
+          <Route path="/admin/users" element={<Users />} />
+          <Route path="/admin/settings" element={<Settings />} />
+        </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-    </>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }

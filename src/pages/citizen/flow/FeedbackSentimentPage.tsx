@@ -8,12 +8,6 @@ import type { SentimentType } from '../../../types/policy.types';
 import { useLanguageStore } from '../../../store/languageStore';
 import { useVerificationStore } from '../../../store/verificationStore';
 
-const tagOptions = [
-  { no: 'SIKKERHET', en: 'SAFETY' },
-  { no: 'SNORYDDING', en: 'SNOW CLEARING' },
-  { no: 'PARKERING', en: 'PARKING' },
-] as const;
-
 const sentimentOptions: Array<{ value: SentimentType; labelNo: string; labelEn: string; symbol: string }> = [
   { value: 'positive', labelNo: 'Bra', labelEn: 'Positive', symbol: '+' },
   { value: 'neutral', labelNo: 'Noytral', labelEn: 'Neutral', symbol: '0' },
@@ -29,7 +23,6 @@ export default function FeedbackSentimentPage() {
   const { castVote, loading } = useSentimentVote(id);
 
   const [selectedSentiment, setSelectedSentiment] = useState<SentimentType | null>(null);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -58,8 +51,7 @@ export default function FeedbackSentimentPage() {
     try {
       await castVote(selectedSentiment);
 
-      const tagsText = selectedTags.map((tag) => `#${tag}`).join(' ');
-      const content = [text.trim(), tagsText].filter(Boolean).join('\n\n');
+      const content = text.trim();
       await submitFeedback(content || tx('Ingen fritekst sendt.', 'No free text provided.'), false, selectedSentiment);
 
       navigate(`/policies/${id}/suksess`);
@@ -104,30 +96,6 @@ export default function FeedbackSentimentPage() {
           })}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {tagOptions.map((tag) => {
-            const tagLabel = language === 'en' ? tag.en : tag.no;
-            const selected = selectedTags.includes(tagLabel);
-            return (
-              <button
-                key={tag.no}
-                type="button"
-                onClick={() =>
-                  setSelectedTags((current) =>
-                    current.includes(tagLabel)
-                      ? current.filter((value) => value !== tagLabel)
-                      : [...current, tagLabel]
-                  )
-                }
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
-                  selected ? 'bg-[#2ea5d8] text-white' : 'bg-[#4fb1da] text-white/90'
-                }`}
-              >
-                #{tagLabel}
-              </button>
-            );
-          })}
-        </div>
 
         <textarea
           value={text}

@@ -13,6 +13,7 @@ import {
   Minus,
   Send,
   User,
+  Layers,
 } from 'lucide-react';
 import { usePolicy } from '../../hooks/usePolicies';
 import { usePolicyFollow } from '../../hooks/usePolicyFollows';
@@ -26,6 +27,9 @@ import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { formatDate, formatRelativeTime, getSentimentBgColor } from '../../lib/utils';
 import type { SentimentType } from '../../types/policy.types';
+import { useLanguageStore } from '../../store/languageStore';
+import { getCategoryLabel, getPolicyDescription, getPolicyTitle } from '../../lib/policyContent';
+import { resolveAttachmentUrl } from '../../lib/policyAttachments';
 
 export default function PolicyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +43,8 @@ export default function PolicyDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const language = useLanguageStore((state) => state.language);
+  const tx = (no: string, en: string) => (language === 'en' ? en : no);
 
   useEffect(() => {
     if (id) {
@@ -53,7 +59,15 @@ export default function PolicyDetailPage() {
 
   const handleFeedbackSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (feedbackText.length < 10) { setFeedbackError('Feedback must be at least 10 characters'); return; }
+    if (feedbackText.length < 10) {
+      setFeedbackError(
+        tx(
+          'Tilbakemeldingen ma inneholde minst 10 tegn',
+          'Feedback must be at least 10 characters'
+        )
+      );
+      return;
+    }
     setSubmitting(true);
     setFeedbackError('');
     try {
@@ -62,7 +76,9 @@ export default function PolicyDetailPage() {
       setFeedbackSuccess(true);
       setTimeout(() => setFeedbackSuccess(false), 3000);
     } catch (err) {
-      setFeedbackError(err instanceof Error ? err.message : 'Failed to submit feedback');
+      setFeedbackError(
+        err instanceof Error ? err.message : tx('Kunne ikke sende tilbakemelding', 'Failed to submit feedback')
+      );
     } finally {
       setSubmitting(false);
     }
@@ -71,17 +87,27 @@ export default function PolicyDetailPage() {
   if (loading) return <LoadingSpinner fullScreen />;
   if (!policy) return (
     <div className="text-center py-16">
-      <p className="text-gray-500">Policy not found</p>
-      <Link to="/policies" className="text-primary-600 hover:underline mt-2 inline-block">Back to policies</Link>
+      <p className="text-gray-500">{tx('Saken ble ikke funnet', 'Policy not found')}</p>
+      <Link to="/policies" className="text-primary-600 hover:underline mt-2 inline-block">
+        {tx('Tilbake til saker', 'Back to policies')}
+      </Link>
     </div>
   );
 
   const totalVotes = sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative;
+  const localizedStatus =
+    policy.status === 'active'
+      ? tx('Aktiv', 'Active')
+      : policy.status === 'under_review'
+      ? tx('Under vurdering', 'Under review')
+      : policy.status === 'closed'
+      ? tx('Lukket', 'Closed')
+      : tx('Utkast', 'Draft');
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <Link to="/policies" className="inline-flex items-center text-sm text-gray-600 hover:text-primary-600">
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back to Policies
+        <ArrowLeft className="h-4 w-4 mr-1" /> {tx('Tilbake til saker', 'Back to policies')}
       </Link>
 
       {/* Policy Header */}
@@ -89,25 +115,25 @@ export default function PolicyDetailPage() {
         <CardContent className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <Badge variant={policy.status as 'active' | 'under_review' | 'closed' | 'draft'} className="text-sm px-3 py-1">
-              {policy.status.replace('_', ' ')}
+              {localizedStatus}
             </Badge>
             {policy.category && (
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
                 style={{ backgroundColor: policy.category.color || '#6B7280' }}>
-                {policy.category.name}
+                {getCategoryLabel(policy.category, language)}
               </span>
             )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{policy.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{getPolicyTitle(policy, language)}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
             <div className="flex items-center space-x-1">
               <Calendar className="h-4 w-4" />
-              <span>Started: {formatDate(policy.start_date)}</span>
+              <span>{tx('Startet', 'Started')}: {formatDate(policy.start_date)}</span>
             </div>
             {policy.end_date && (
               <div className="flex items-center space-x-1 text-orange-600">
                 <Calendar className="h-4 w-4" />
-                <span>Closes: {formatDate(policy.end_date)}</span>
+                <span>{tx('Stenger', 'Closes')}: {formatDate(policy.end_date)}</span>
               </div>
             )}
             <div className="flex items-center space-x-1">
@@ -116,14 +142,22 @@ export default function PolicyDetailPage() {
             </div>
           </div>
           <div className="prose prose-gray max-w-none">
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{policy.description}</p>
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{getPolicyDescription(policy, language)}</p>
           </div>
           {user ? (
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap gap-3">
               <Button variant="outline" onClick={toggleFollow} disabled={followLoading}>
                 {following ? <BellOff className="h-4 w-4 mr-2" /> : <Bell className="h-4 w-4 mr-2" />}
-                {following ? 'Following updates' : 'Follow updates'}
+                {following ? tx('Folger oppdateringer', 'Following updates') : tx('Folg oppdateringer', 'Follow updates')}
               </Button>
+              {policy.topics && policy.topics.length > 0 && (
+                <Button variant="outline" asChild>
+                  <Link to={`/policies/${policy.id}/utforsk`}>
+                    <Layers className="h-4 w-4 mr-2" />
+                    {tx('Utforsk temaer', 'Explore topics')}
+                  </Link>
+                </Button>
+              )}
             </div>
           ) : null}
           {policy.tags && policy.tags.length > 0 && (
@@ -135,7 +169,7 @@ export default function PolicyDetailPage() {
           )}
           {policy.districts && policy.districts.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm font-medium text-gray-700">Target districts:</p>
+              <p className="text-sm font-medium text-gray-700">{tx('Berorte distrikter:', 'Target districts:')}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {policy.districts.map((district) => (
                   <span key={district.district_id} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
@@ -147,9 +181,9 @@ export default function PolicyDetailPage() {
           )}
           {policy.attachments && policy.attachments.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="text-sm font-medium text-gray-700">Attachments:</p>
+              <p className="text-sm font-medium text-gray-700">{tx('Vedlegg:', 'Attachments:')}</p>
               {policy.attachments.map(att => (
-                <a key={att.id} href={att.file_path} target="_blank" rel="noopener noreferrer"
+                <a key={att.id} href={resolveAttachmentUrl(att.file_path)} target="_blank" rel="noopener noreferrer"
                   className="flex items-center space-x-2 text-sm text-primary-600 hover:underline">
                   <Paperclip className="h-4 w-4" />
                   <span>{att.file_name}</span>
@@ -163,7 +197,7 @@ export default function PolicyDetailPage() {
       {policy.events && policy.events.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Upcoming events</CardTitle>
+            <CardTitle className="text-lg">{tx('Kommende arrangementer', 'Upcoming events')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {policy.events.map((event) => (
@@ -196,7 +230,7 @@ export default function PolicyDetailPage() {
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex text-sm font-medium text-primary-600 hover:underline"
                   >
-                    Register for event
+                    {tx('Registrer deg for arrangementet', 'Register for event')}
                   </a>
                 ) : null}
               </div>
@@ -208,7 +242,7 @@ export default function PolicyDetailPage() {
       {policy.updates && policy.updates.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Official updates</CardTitle>
+            <CardTitle className="text-lg">{tx('Offisielle oppdateringer', 'Official updates')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {policy.updates.map((update) => (
@@ -237,14 +271,14 @@ export default function PolicyDetailPage() {
       {policy.status === 'active' && user && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">How do you feel about this policy?</CardTitle>
+            <CardTitle className="text-lg">{tx('Hva synes du om denne saken?', 'How do you feel about this policy?')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               {([
-                { sentiment: 'positive' as SentimentType, label: 'Support', icon: ThumbsUp, color: 'text-green-600 border-green-300 bg-green-50 hover:bg-green-100' },
-                { sentiment: 'neutral' as SentimentType, label: 'Neutral', icon: Minus, color: 'text-yellow-600 border-yellow-300 bg-yellow-50 hover:bg-yellow-100' },
-                { sentiment: 'negative' as SentimentType, label: 'Oppose', icon: ThumbsDown, color: 'text-red-600 border-red-300 bg-red-50 hover:bg-red-100' },
+                { sentiment: 'positive' as SentimentType, label: tx('Stott', 'Support'), icon: ThumbsUp, color: 'text-green-600 border-green-300 bg-green-50 hover:bg-green-100' },
+                { sentiment: 'neutral' as SentimentType, label: tx('Noytral', 'Neutral'), icon: Minus, color: 'text-yellow-600 border-yellow-300 bg-yellow-50 hover:bg-yellow-100' },
+                { sentiment: 'negative' as SentimentType, label: tx('Imot', 'Oppose'), icon: ThumbsDown, color: 'text-red-600 border-red-300 bg-red-50 hover:bg-red-100' },
               ]).map(({ sentiment, label, icon: Icon, color }) => (
                 <button
                   key={sentiment}
@@ -264,7 +298,9 @@ export default function PolicyDetailPage() {
                 <div className="bg-red-500 transition-all" style={{ width: `${(sentimentCounts.negative/totalVotes)*100}%` }} />
               </div>
             )}
-            <p className="text-xs text-gray-500 mt-2 text-center">{totalVotes} total votes</p>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              {tx(`${totalVotes} stemmer totalt`, `${totalVotes} total votes`)}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -273,16 +309,23 @@ export default function PolicyDetailPage() {
       {policy.status === 'active' && user && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Share your feedback</CardTitle>
+            <CardTitle className="text-lg">{tx('Del tilbakemeldingen din', 'Share your feedback')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFeedbackSubmit} className="space-y-4">
               {feedbackError && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded text-sm">{feedbackError}</div>}
-              {feedbackSuccess && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded text-sm">Feedback submitted successfully!</div>}
+              {feedbackSuccess && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded text-sm">
+                  {tx('Tilbakemeldingen ble sendt', 'Feedback submitted successfully!')}
+                </div>
+              )}
               <Textarea
                 value={feedbackText}
                 onChange={(e) => setFeedbackText(e.target.value)}
-                placeholder="Share your thoughts on this policy... (10-2000 characters)"
+                placeholder={tx(
+                  'Del tankene dine om denne saken... (10-2000 tegn)',
+                  'Share your thoughts on this policy... (10-2000 characters)'
+                )}
                 className="min-h-[120px]"
                 maxLength={2000}
               />
@@ -295,13 +338,15 @@ export default function PolicyDetailPage() {
                     onChange={(e) => setIsAnonymous(e.target.checked)}
                     className="rounded"
                   />
-                  <label htmlFor="anonymous" className="text-sm text-gray-600">Submit anonymously</label>
+                  <label htmlFor="anonymous" className="text-sm text-gray-600">
+                    {tx('Send anonymt', 'Submit anonymously')}
+                  </label>
                 </div>
                 <div className="flex items-center space-x-3">
                   <span className="text-xs text-gray-400">{feedbackText.length}/2000</span>
                   <Button type="submit" size="sm" disabled={submitting || feedbackText.length < 10}>
                     <Send className="h-4 w-4 mr-2" />
-                    {submitting ? 'Submitting...' : 'Submit Feedback'}
+                    {submitting ? tx('Sender...', 'Submitting...') : tx('Send tilbakemelding', 'Submit feedback')}
                   </Button>
                 </div>
               </div>
@@ -313,11 +358,15 @@ export default function PolicyDetailPage() {
       {/* Feedback List */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Community Feedback ({feedback.length})</CardTitle>
+          <CardTitle className="text-lg">
+            {tx(`Innbyggerinnspill (${feedback.length})`, `Community feedback (${feedback.length})`)}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {feedback.length === 0 ? (
-            <p className="text-center text-gray-500 py-6">No feedback yet. Be the first to share your thoughts!</p>
+            <p className="text-center text-gray-500 py-6">
+              {tx('Ingen tilbakemeldinger enda. Vaer den forste som deler synspunktet ditt!', 'No feedback yet. Be the first to share your thoughts!')}
+            </p>
           ) : (
             <div className="space-y-4">
               {feedback.map(item => (
@@ -328,7 +377,7 @@ export default function PolicyDetailPage() {
                         <User className="h-4 w-4 text-gray-500" />
                       </div>
                       <span className="text-sm font-medium text-gray-700">
-                        {item.is_anonymous ? 'Anonymous' : (item.profiles?.full_name || 'Citizen')}
+                        {item.is_anonymous ? tx('Anonym', 'Anonymous') : (item.profiles?.full_name || tx('Innbygger', 'Citizen'))}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">

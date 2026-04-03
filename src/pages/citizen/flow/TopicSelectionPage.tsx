@@ -1,4 +1,17 @@
-import { Bike, Coins, HardHat, Trees } from 'lucide-react';
+import {
+  Bike,
+  Coins,
+  HardHat,
+  Trees,
+  Bus,
+  Home,
+  Wallet,
+  MapPin,
+  Clock,
+  Shield,
+  Leaf,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
@@ -8,13 +21,24 @@ import { usePolicy } from '../../../hooks/usePolicies';
 import { supabase } from '../../../lib/supabase';
 import { getFlowTopics } from './topics';
 import { useLanguageStore } from '../../../store/languageStore';
+import { getPolicyTitle } from '../../../lib/policyContent';
 
-const topicIcons = {
+const TOPIC_ICONS: Record<string, LucideIcon> = {
+  // icon_key values from DB
+  bus: Bus,
+  wallet: Wallet,
+  home: Home,
+  'map-pin': MapPin,
+  clock: Clock,
+  shield: Shield,
+  coins: Coins,
+  leaf: Leaf,
+  // legacy slug-based keys
   'bedre-sykkelveier': Bike,
   'flere-gronne-soner': Trees,
   'budsjett-kostnad': Coins,
   anleggsperioder: HardHat,
-} as const;
+};
 
 export default function TopicSelectionPage() {
   const { id = '' } = useParams();
@@ -31,13 +55,13 @@ export default function TopicSelectionPage() {
   if (loading) return <LoadingSpinner fullScreen />;
 
   return (
-    <CivicusMobileShell>
+    <CivicusMobileShell backTo={`/policies/${id}`}>
       <div className="space-y-6 text-center">
         <BrandMark className="mx-auto h-16 w-16 rounded-xl border-[#b8d7ea]" />
 
         <div>
           <h1 className="text-[2.1rem] font-extrabold leading-tight text-[#0d87c5] drop-shadow-[0_2px_2px_rgba(8,41,65,0.18)]">
-            {policy?.title || tx('Aktiv kommunal sak', 'Active municipal policy')}
+            {policy ? getPolicyTitle(policy, language) : tx('Aktiv kommunal sak', 'Active municipal policy')}
           </h1>
           <p className="mt-2 text-sm text-[#4d6f8a]">
             {tx(
@@ -49,7 +73,7 @@ export default function TopicSelectionPage() {
 
         <div className="grid grid-cols-2 gap-4 pt-2">
           {topics.map((topic) => {
-            const Icon = topicIcons[(topic.icon_key || topic.slug) as keyof typeof topicIcons] || Bike;
+            const Icon = TOPIC_ICONS[topic.icon_key ?? ''] ?? TOPIC_ICONS[topic.slug] ?? Bike;
             return (
               <Link
                 key={topic.slug}

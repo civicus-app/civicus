@@ -1,65 +1,68 @@
 import { Link } from 'react-router-dom';
-import { Calendar, Users, TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
+import {
+  Bus,
+  Home,
+  Leaf,
+  Music,
+  BookOpen,
+  Building2,
+  type LucideIcon,
+} from 'lucide-react';
 import { Badge } from '../ui/badge';
-import { formatDate, truncateText } from '../../lib/utils';
 import type { Policy } from '../../types/policy.types';
+import { useLanguageStore } from '../../store/languageStore';
+import { getCategoryLabel, getPolicyTitle } from '../../lib/policyContent';
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Transportation: Bus,
+  Housing: Home,
+  Environment: Leaf,
+  Culture: Music,
+  Education: BookOpen,
+};
+
+const DEFAULT_COLOR = '#3B82F6';
 
 interface PolicyCardProps {
   policy: Policy;
   engagementCount?: number;
 }
 
-export default function PolicyCard({ policy, engagementCount = 0 }: PolicyCardProps) {
+export default function PolicyCard({ policy }: PolicyCardProps) {
+  const language = useLanguageStore((state) => state.language);
   const statusLabel: Record<string, string> = {
-    active: 'Aktiv',
-    under_review: 'Under vurdering',
-    closed: 'Lukket',
-    draft: 'Utkast',
+    active: language === 'en' ? 'Active' : 'Aktiv',
+    under_review: language === 'en' ? 'Under review' : 'Under vurdering',
+    closed: language === 'en' ? 'Closed' : 'Lukket',
+    draft: language === 'en' ? 'Draft' : 'Utkast',
   };
+
+  const bgColor = policy.category?.color || DEFAULT_COLOR;
+  const categoryName = policy.category?.name || '';
+  const Icon = CATEGORY_ICONS[categoryName] ?? Building2;
 
   return (
     <Link to={`/policies/${policy.id}`}>
-      <Card className="h-full bg-white border border-[#d4dde9] hover:shadow-md hover:border-[#9eb6d4] transition-all cursor-pointer">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-lg font-semibold text-[#274769] leading-snug line-clamp-2">{policy.title}</h3>
-            <Badge variant={policy.status as 'active' | 'under_review' | 'closed' | 'draft'} className="flex-shrink-0">
-              {statusLabel[policy.status]}
-            </Badge>
-          </div>
-          {policy.category && (
-            <span
-              className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold text-white w-fit"
-              style={{ backgroundColor: policy.category.color || '#6B7280' }}
-            >
-              {policy.category.name}
-            </span>
-          )}
-        </CardHeader>
-        <CardContent className="pb-3">
-          <p className="text-sm text-[#4f6684] line-clamp-3">
-            {truncateText(policy.description, 150)}
-          </p>
-        </CardContent>
-        <CardFooter className="pt-0 flex items-center justify-between text-xs text-[#5b7391]">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-1">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>{formatDate(policy.start_date)}</span>
-            </div>
-            {policy.end_date && (
-              <div className="flex items-center space-x-1 text-orange-600">
-                <span>Closes: {formatDate(policy.end_date)}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center space-x-1">
-            <Users className="h-3.5 w-3.5" />
-            <span>{engagementCount}</span>
-          </div>
-        </CardFooter>
-      </Card>
+      <div
+        className="rounded-[20px] aspect-square flex flex-col items-center justify-center gap-3 p-6 cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
+        style={{ backgroundColor: bgColor }}
+      >
+        <Icon className="h-14 w-14 text-white" strokeWidth={1.5} />
+        <p className="text-center text-white font-semibold text-sm leading-snug line-clamp-2 max-w-[80%]">
+          {getPolicyTitle(policy, language)}
+        </p>
+        {policy.category && (
+          <span className="text-white/70 text-xs font-medium">
+            {getCategoryLabel(policy.category, language)}
+          </span>
+        )}
+        <Badge
+          variant={policy.status as 'active' | 'under_review' | 'closed' | 'draft'}
+          className="bg-white/20 text-white border-white/30 text-xs"
+        >
+          {statusLabel[policy.status]}
+        </Badge>
+      </div>
     </Link>
   );
 }
