@@ -306,7 +306,7 @@ export default function Signup() {
 
       {!MFA_ENABLED ? (
         <form onSubmit={handleDirectSignup} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(['citizen', 'admin'] as AccountMode[]).map((option) => {
               const active = mode === option;
               return (
@@ -423,7 +423,7 @@ export default function Signup() {
         </form>
       ) : step === 'details' ? (
         <form onSubmit={handleStartSignup} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(['citizen', 'admin'] as AccountMode[]).map((option) => {
               const active = mode === option;
               return (
@@ -502,7 +502,7 @@ export default function Signup() {
 
       {step === 'otp' ? (
         <form onSubmit={handleVerifyOtp} className="space-y-4">
-          <div className="rounded-2xl border border-[#d8e0ee] bg-[#f8fbff] px-4 py-3 text-sm text-[#4f607a]">
+          <div className="rounded-[24px] border border-[#d8e0ee] bg-[linear-gradient(180deg,#f8fbff_0%,#eef6ff_100%)] px-4 py-4 text-sm text-[#4f607a]">
             <p className="font-medium text-[#24354c]">{email}</p>
             <p className="mt-1">{tx('Koden utloper etter 10 minutter.', 'The code expires after 10 minutes.')}</p>
             {DATA_PROVIDER === 'local' && challenge?.debugCode ? (

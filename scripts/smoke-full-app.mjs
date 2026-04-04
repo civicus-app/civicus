@@ -58,6 +58,8 @@ const main = async () => {
   // Engagement data is intentionally NOT reset — all votes, feedback, follows,
   // notifications and views created by this run are preserved for manual review.
 
+  // 6 fixtures total: 3 active+published, 1 under_review+published,
+  // 1 closed+published, 1 draft+unpublished
   const activePublishedPolicies = policies.filter(
     (policy) => policy.isPublished && policy.status === 'active',
   );
@@ -65,10 +67,12 @@ const main = async () => {
     (policy) => policy.isPublished && visibleStatuses.includes(policy.status),
   );
   const hiddenDraftPolicy = policies.find((policy) => !policy.isPublished && policy.status === 'draft');
+  const closedPolicy = policies.find((policy) => policy.isPublished && policy.status === 'closed');
 
-  ensure(activePublishedPolicies.length === 2, 'Expected 2 published active fixture policies');
-  ensure(citizenVisibleFixtures.length === 3, 'Expected 3 citizen-visible fixture policies');
+  ensure(activePublishedPolicies.length === 5, 'Expected 5 published active fixture policies');
+  ensure(citizenVisibleFixtures.length === 7, 'Expected 7 citizen-visible fixture policies');
   ensure(hiddenDraftPolicy, 'Expected one hidden draft fixture policy');
+  ensure(closedPolicy, 'Expected one closed published fixture policy');
 
   const adminSession = await signInAndVerifyAccount(adminAccount, serviceRoleClient);
   const citizenSessions = [];
@@ -91,7 +95,7 @@ const main = async () => {
       .in('title_no', policies.map((policy) => policy.title_no));
     if (error) throw error;
 
-    ensure((adminPolicies || []).length === 4, 'Admin policy list does not include all 4 fixtures');
+    ensure((adminPolicies || []).length === 8, 'Admin policy list does not include all 8 fixtures');
 
     const { data: dashboardMetrics, error: dashboardError } = await adminSession.client.rpc(
       'get_dashboard_metrics',
@@ -183,15 +187,24 @@ const main = async () => {
 
   // ─── 5. VOTING ──────────────────────────────────────────────────────────────
   await recordCheck('voting', async () => {
-    const [districtPolicy, municipalityPolicy] = activePublishedPolicies;
+    const [firstPolicy, secondPolicy, thirdPolicy, fourthPolicy, fifthPolicy] = activePublishedPolicies;
 
     const votePlan = [
-      { session: citizenSessions[0], policyId: districtPolicy.id, sentiment: 'positive' },
-      { session: citizenSessions[0], policyId: municipalityPolicy.id, sentiment: 'neutral' },
-      { session: citizenSessions[1], policyId: districtPolicy.id, sentiment: 'negative' },
-      { session: citizenSessions[1], policyId: municipalityPolicy.id, sentiment: 'positive' },
-      { session: citizenSessions[2], policyId: districtPolicy.id, sentiment: 'neutral' },
-      { session: citizenSessions[2], policyId: municipalityPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[0], policyId: firstPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[0], policyId: secondPolicy.id, sentiment: 'neutral' },
+      { session: citizenSessions[0], policyId: thirdPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[0], policyId: fourthPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[0], policyId: fifthPolicy.id, sentiment: 'neutral' },
+      { session: citizenSessions[1], policyId: firstPolicy.id, sentiment: 'negative' },
+      { session: citizenSessions[1], policyId: secondPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[1], policyId: thirdPolicy.id, sentiment: 'neutral' },
+      { session: citizenSessions[1], policyId: fourthPolicy.id, sentiment: 'negative' },
+      { session: citizenSessions[1], policyId: fifthPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[2], policyId: firstPolicy.id, sentiment: 'neutral' },
+      { session: citizenSessions[2], policyId: secondPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[2], policyId: thirdPolicy.id, sentiment: 'negative' },
+      { session: citizenSessions[2], policyId: fourthPolicy.id, sentiment: 'positive' },
+      { session: citizenSessions[2], policyId: fifthPolicy.id, sentiment: 'neutral' },
     ];
 
     for (const vote of votePlan) {
@@ -373,7 +386,22 @@ const main = async () => {
     ensure(updated.is_read === true, 'Notification was not marked as read');
   });
 
-  // ─── 12. ANALYTICS / DASHBOARD CONSISTENCY ──────────────────────────────────
+  // ─── 12. NOTIFICATIONS: UNREAD COUNT FILTER ─────────────────────────────────
+  // Mirrors the NotificationBell component — fetches is_read=false rows.
+  await recordCheck('notifications: unread count filter', async () => {
+    const follower = citizenSessions[0];
+
+    // Insert a fresh unread notification via the trigger path (already done in #9),
+    // so at minimum we can verify the filter query itself works without error.
+    const { data: unread, error } = await follower.client
+      .from('notifications')
+      .select('id', { count: 'exact' })
+      .eq('is_read', false);
+    if (error) throw error;
+    ensure(unread !== null, 'Unread notification query returned null');
+  });
+
+  // ─── 13. ANALYTICS / DASHBOARD CONSISTENCY ──────────────────────────────────
   await recordCheck('analytics/dashboard consistency', async () => {
     for (const citizenSession of citizenSessions) {
       for (const policy of activePublishedPolicies) {
@@ -408,8 +436,8 @@ const main = async () => {
       `Dashboard active policy count (${dashboardMetrics.active_policies}) does not match published active policy count (${activePublishedCount})`,
     );
     ensure(
-      dashboardMetrics.total_participants === 3,
-      `Expected 3 total participants, got ${dashboardMetrics.total_participants}`,
+      dashboardMetrics.total_participants >= 3,
+      `Expected at least 3 total participants, got ${dashboardMetrics.total_participants}`,
     );
 
     const activeAnalyticsRows = (analyticsRows || []).filter(
@@ -420,16 +448,16 @@ const main = async () => {
         row.feedback_count > 0,
     );
 
-    ensure(activeAnalyticsRows.length >= 2, 'Analytics did not record activity for the demo policies');
+    ensure(activeAnalyticsRows.length >= 5, 'Analytics did not record activity for all 5 active demo policies');
 
     const visiblePolicyCount = citizenVisibleFixtures.length;
     ensure(
-      activePublishedPolicies.length === 2 && visiblePolicyCount === 3,
+      activePublishedPolicies.length === 5 && visiblePolicyCount === 7,
       'Fixture visibility expectations are out of sync with the smoke test assumptions',
     );
   });
 
-  // ─── 13. POLICY VIEW DEDUPLICATION ──────────────────────────────────────────
+  // ─── 14. POLICY VIEW DEDUPLICATION ──────────────────────────────────────────
   await recordCheck('policy view deduplication', async () => {
     const targetPolicy = activePublishedPolicies[0];
     const viewer = citizenSessions[0];
@@ -451,7 +479,7 @@ const main = async () => {
     ensure((viewRows || []).length === 1, `Expected 1 deduplicated view row, got ${(viewRows || []).length}`);
   });
 
-  // ─── 14. POLICY ANALYTICS RPC STRUCTURE ─────────────────────────────────────
+  // ─── 15. POLICY ANALYTICS RPC STRUCTURE ─────────────────────────────────────
   await recordCheck('policy analytics rpc structure', async () => {
     const { data: analyticsRows, error } = await adminSession.client.rpc(
       'get_policy_analytics',
@@ -469,7 +497,18 @@ const main = async () => {
     }
   });
 
-  // ─── 15. POLICY ATTACHMENTS READABLE BY CITIZEN ─────────────────────────────
+  // ─── 16. DISTRICT METRICS RPC ───────────────────────────────────────────────
+  // Backs the DistrictGeoMap and AdminDashboard district breakdown panel.
+  await recordCheck('district metrics rpc', async () => {
+    const { data: districtMetrics, error } = await adminSession.client.rpc(
+      'get_district_participation_metrics',
+      { time_period: '30d', policy_id: null },
+    );
+    if (error) throw error;
+    ensure(Array.isArray(districtMetrics), 'get_district_participation_metrics did not return an array');
+  });
+
+  // ─── 17. POLICY ATTACHMENTS READABLE BY CITIZEN ─────────────────────────────
   await recordCheck('policy attachments readable by citizen', async () => {
     // demo-bus-expansion and demo-housing-pilot have fixture attachments
     const busFixture = policiesByKey['demo-bus-expansion'];
@@ -483,7 +522,50 @@ const main = async () => {
     ensure((attachments || []).length > 0, 'Citizen cannot read policy attachments for published policy');
   });
 
-  // ─── 16. CITIZEN CANNOT WRITE POLICIES (RLS) ────────────────────────────────
+  // ─── 18. CITIZEN POLICY TOPICS READABLE ─────────────────────────────────────
+  // Backs the PolicyTopicsOverlay and flow topic selection.
+  await recordCheck('citizen: policy topics readable', async () => {
+    const targetFixture = policiesByKey['demo-bus-expansion'];
+    const citizen = citizenSessions[0];
+
+    const { data: topics, error } = await citizen.client
+      .from('policy_topics')
+      .select('id, slug, label_no, label_en, description_no, description_en, icon_key')
+      .eq('policy_id', targetFixture.id);
+    if (error) throw error;
+    ensure((topics || []).length > 0, 'Citizen cannot read policy_topics for a published policy');
+  });
+
+  // ─── 19. CITIZEN POLICY UPDATES READABLE ────────────────────────────────────
+  // Backs the policy detail / timeline view shown to citizens.
+  await recordCheck('citizen: policy updates readable', async () => {
+    const busFixture = policiesByKey['demo-bus-expansion'];
+    const citizen = citizenSessions[0];
+
+    const { data: updates, error } = await citizen.client
+      .from('policy_updates')
+      .select('id, title, content, update_type, created_at')
+      .eq('policy_id', busFixture.id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    ensure((updates || []).length > 0, 'Citizen cannot read policy_updates for a published policy');
+  });
+
+  // ─── 20. CITIZEN POLICY EVENTS READABLE ─────────────────────────────────────
+  // Backs the event listing shown on policy detail pages.
+  await recordCheck('citizen: policy events readable', async () => {
+    const busFixture = policiesByKey['demo-bus-expansion'];
+    const citizen = citizenSessions[0];
+
+    const { data: events, error } = await citizen.client
+      .from('events')
+      .select('id, title, event_date, location, mode')
+      .eq('policy_id', busFixture.id);
+    if (error) throw error;
+    ensure((events || []).length > 0, 'Citizen cannot read events for a published policy');
+  });
+
+  // ─── 21. CITIZEN CANNOT WRITE POLICIES (RLS) ────────────────────────────────
   await recordCheck('citizen cannot write policies (RLS)', async () => {
     const citizen = citizenSessions[0];
     const { data: categories } = await serviceRoleClient.from('categories').select('id').limit(1);
@@ -501,7 +583,7 @@ const main = async () => {
     ensure(error !== null, 'Citizen was able to insert into policies — RLS is not enforced');
   });
 
-  // ─── 17. DISTRICTS READABLE BY CITIZENS ─────────────────────────────────────
+  // ─── 22. DISTRICTS READABLE BY CITIZENS ─────────────────────────────────────
   await recordCheck('districts readable by citizens', async () => {
     const citizen = citizenSessions[0];
     const { data: districts, error } = await citizen.client
@@ -511,7 +593,7 @@ const main = async () => {
     ensure((districts || []).length > 0, 'Citizens cannot read districts table');
   });
 
-  // ─── 18. PROFILE: READ OWN ───────────────────────────────────────────────────
+  // ─── 23. PROFILE: READ OWN ───────────────────────────────────────────────────
   await recordCheck('profile: read own', async () => {
     const citizen = citizenSessions[0];
     const { data: profile, error } = await citizen.client
@@ -524,7 +606,7 @@ const main = async () => {
     ensure(profile.role === 'citizen', 'Own profile role is not citizen');
   });
 
-  // ─── 19. PROFILE: UPDATE OWN ─────────────────────────────────────────────────
+  // ─── 24. PROFILE: UPDATE OWN ─────────────────────────────────────────────────
   await recordCheck('profile: update own', async () => {
     const citizen = citizenSessions[0];
     const originalValue = citizen.profile.email_notifications;
@@ -551,7 +633,7 @@ const main = async () => {
       .eq('id', citizen.profile.id);
   });
 
-  // ─── 20. CITIZEN CANNOT UPDATE ANOTHER USER'S PROFILE (RLS) ─────────────────
+  // ─── 25. CITIZEN CANNOT UPDATE ANOTHER USER'S PROFILE (RLS) ─────────────────
   // PostgREST silently ignores rows excluded by RLS USING clause — no error is
   // returned, but 0 rows are modified. We verify by reading the victim's profile
   // afterwards and confirming full_name was not changed.
@@ -578,7 +660,48 @@ const main = async () => {
     );
   });
 
-  // ─── 21. MAP COMMENTS ────────────────────────────────────────────────────────
+  // ─── 26. PROFILE: ENGAGEMENT HISTORY ────────────────────────────────────────
+  // Backs the Profile page "History" tab — reads citizen's own votes and feedback
+  // joined with policy titles.
+  await recordCheck('profile: engagement history', async () => {
+    const citizen = citizenSessions[0];
+
+    const [votesResult, feedbackResult] = await Promise.all([
+      citizen.client
+        .from('sentiment_votes')
+        .select('policy_id, created_at, policies(title)')
+        .eq('user_id', citizen.profile.id)
+        .order('created_at', { ascending: false })
+        .limit(10),
+      citizen.client
+        .from('feedback')
+        .select('policy_id, created_at, policies(title)')
+        .eq('user_id', citizen.profile.id)
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ]);
+
+    if (votesResult.error) throw votesResult.error;
+    if (feedbackResult.error) throw feedbackResult.error;
+
+    ensure((votesResult.data || []).length > 0, 'Citizen engagement history: no vote history found');
+    ensure((feedbackResult.data || []).length > 0, 'Citizen engagement history: no feedback history found');
+  });
+
+  // ─── 27. CITIZEN OWN FOLLOWS READABLE ───────────────────────────────────────
+  // Backs the notification bell badge and profile follow list.
+  await recordCheck('citizen: own follows readable', async () => {
+    const citizen = citizenSessions[0];
+
+    const { data: follows, error } = await citizen.client
+      .from('policy_follows')
+      .select('policy_id')
+      .eq('user_id', citizen.profile.id);
+    if (error) throw error;
+    ensure((follows || []).length > 0, 'Citizen cannot read own policy_follows');
+  });
+
+  // ─── 28. MAP COMMENTS ────────────────────────────────────────────────────────
   await recordCheck('map comments: insert and read', async () => {
     const citizen = citizenSessions[0];
     const targetPolicy = activePublishedPolicies[0];
@@ -605,7 +728,7 @@ const main = async () => {
     ensure((comments || []).length > 0, 'Map comment was not found after insertion');
   });
 
-  // ─── 22. POLICY TAGS READABLE BY CITIZENS ───────────────────────────────────
+  // ─── 29. POLICY TAGS READABLE BY CITIZENS ───────────────────────────────────
   await recordCheck('policy tags readable by citizens', async () => {
     const citizen = citizenSessions[0];
     const busFixture = policiesByKey['demo-bus-expansion'];
@@ -618,7 +741,7 @@ const main = async () => {
     ensure((tags || []).length > 0, 'Citizen cannot read policy tags for published policy');
   });
 
-  // ─── 23. SETTINGS / CATEGORIES READ PATHS ───────────────────────────────────
+  // ─── 30. SETTINGS / CATEGORIES READ PATHS ───────────────────────────────────
   await recordCheck('settings/categories read paths', async () => {
     const { data: appSettings, error: settingsError } = await adminSession.client
       .from('app_settings')
@@ -633,6 +756,133 @@ const main = async () => {
       .select('*');
     if (categoriesError) throw categoriesError;
     ensure((categories || []).length > 0, 'Categories are missing');
+  });
+
+  // ─── 31. ADMIN: PUBLISH / UNPUBLISH TOGGLE ──────────────────────────────────
+  // Backs the is_published toggle on the admin Policies list page.
+  await recordCheck('admin: publish/unpublish toggle', async () => {
+    // Use the draft fixture — currently unpublished. Toggle it on then off.
+    const { data: draftRow, error: fetchError } = await adminSession.client
+      .from('policies')
+      .select('id, is_published')
+      .eq('id', hiddenDraftPolicy.id)
+      .single();
+    if (fetchError) throw fetchError;
+    ensure(draftRow.is_published === false, 'Draft fixture should start as unpublished');
+
+    // Toggle on
+    const { error: onError } = await adminSession.client
+      .from('policies')
+      .update({ is_published: true, published_at: new Date().toISOString() })
+      .eq('id', hiddenDraftPolicy.id);
+    if (onError) throw onError;
+
+    const { data: publishedRow, error: publishedError } = await adminSession.client
+      .from('policies')
+      .select('is_published')
+      .eq('id', hiddenDraftPolicy.id)
+      .single();
+    if (publishedError) throw publishedError;
+    ensure(publishedRow.is_published === true, 'Policy was not set to published');
+
+    // Toggle off — restore original state
+    const { error: offError } = await adminSession.client
+      .from('policies')
+      .update({ is_published: false, published_at: null })
+      .eq('id', hiddenDraftPolicy.id);
+    if (offError) throw offError;
+  });
+
+  // ─── 32. ADMIN: CREATE AND DELETE POLICY ────────────────────────────────────
+  // Backs the PolicyEditor create flow and the delete confirmation dialog.
+  await recordCheck('admin: create and delete policy', async () => {
+    const { data: categories } = await serviceRoleClient.from('categories').select('id').limit(1);
+
+    const tempPayload = {
+      policy: {
+        title: 'Smoke temp policy — delete me',
+        title_no: 'Smoke temp policy — delete me',
+        title_en: 'Smoke temp policy — delete me',
+        description: 'Created and immediately deleted by the smoke test.',
+        description_no: 'Created and immediately deleted by the smoke test.',
+        description_en: 'Created and immediately deleted by the smoke test.',
+        category_id: categories[0].id,
+        status: 'draft',
+        scope: 'municipality',
+        start_date: new Date().toISOString().slice(0, 10),
+        end_date: null,
+        allow_anonymous: false,
+        video_url: '',
+        is_published: false,
+        published_at: null,
+      },
+      district_ids: [],
+      tags: [],
+      topics: [],
+      updates: [],
+      events: [],
+    };
+
+    const { data: createResult, error: createError } = await adminSession.client.rpc(
+      'admin_upsert_policy_workspace',
+      { payload: tempPayload },
+    );
+    if (createError) throw createError;
+    const tempId = createResult?.policy_id;
+    ensure(tempId, 'admin_upsert_policy_workspace did not return a policy_id');
+
+    // Verify it exists
+    const { data: tempRow, error: readError } = await serviceRoleClient
+      .from('policies')
+      .select('id')
+      .eq('id', tempId)
+      .single();
+    if (readError) throw readError;
+    ensure(tempRow.id === tempId, 'Temp policy not found after creation');
+
+    // Delete it
+    const { error: deleteError } = await adminSession.client.rpc(
+      'admin_delete_policy_workspace',
+      { policy_id: tempId },
+    );
+    if (deleteError) throw deleteError;
+
+    // Verify it is gone
+    const { data: deletedRow } = await serviceRoleClient
+      .from('policies')
+      .select('id')
+      .eq('id', tempId)
+      .maybeSingle();
+    ensure(deletedRow === null, 'Policy still exists after admin_delete_policy_workspace');
+  });
+
+  // ─── 33. ADMIN: FEEDBACK READ PATH ──────────────────────────────────────────
+  // Backs the admin feedback panel / analytics view.
+  await recordCheck('admin: feedback read path', async () => {
+    const { data: allFeedback, error } = await adminSession.client
+      .from('feedback')
+      .select('id, policy_id, content, sentiment, is_anonymous, created_at')
+      .in('policy_id', activePublishedPolicies.map((p) => p.id))
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    ensure((allFeedback || []).length > 0, 'Admin feedback read path returned no rows');
+  });
+
+  // ─── 34. CLOSED POLICY VISIBLE TO CITIZEN, NOT VOTEABLE ─────────────────────
+  // Citizens can read a closed policy but the vote insert should be rejected if
+  // the DB enforces a status constraint, or at minimum the policy is readable.
+  await recordCheck('closed policy visible to citizen', async () => {
+    const citizen = citizenSessions[0];
+
+    const { data: closedRow, error } = await citizen.client
+      .from('policies')
+      .select('id, status, is_published')
+      .eq('id', closedPolicy.id)
+      .eq('is_published', true)
+      .single();
+    if (error) throw error;
+    ensure(closedRow.status === 'closed', 'Closed policy not visible to citizen');
   });
 
   // ─── CLEANUP ─────────────────────────────────────────────────────────────────

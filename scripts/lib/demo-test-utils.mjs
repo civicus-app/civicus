@@ -281,6 +281,271 @@ export const DEMO_POLICY_FIXTURES = [
     events: [],
     attachments: [],
   },
+  {
+    key: 'demo-digital-schools',
+    title_no: 'DEMO: Digitale ferdigheter i grunnskolen',
+    title_en: 'DEMO: Digital Skills in Primary Schools',
+    description_no:
+      'En demonstrasjonssak for kommunal satsing pa digital kompetanse i grunnskolen, inkludert utstyr, laererressurser og tilgang for elever uten hjemmeutstyr.',
+    description_en:
+      'A demo policy for the municipal investment in digital competence across primary schools, covering devices, teacher training, and access for students without home equipment.',
+    categoryName: 'Education',
+    status: 'active',
+    isPublished: true,
+    scope: 'municipality',
+    districtNames: [],
+    allowAnonymous: true,
+    tags: ['demo-fixture', 'education', 'digital'],
+    topics: [
+      {
+        slug: 'device-access',
+        label_no: 'Utstyr og tilgang',
+        label_en: 'Device access',
+        description_no: 'Sikre at alle elever har tilgang til en personlig enhet for laering.',
+        description_en: 'Ensuring every student has access to a personal learning device.',
+        icon_key: 'shield',
+      },
+      {
+        slug: 'teacher-training',
+        label_no: 'Laereropplaering',
+        label_en: 'Teacher training',
+        description_no: 'Kompetanseheving for laerere i bruk av digitale verktoy i undervisningen.',
+        description_en: 'Upskilling teachers in the use of digital tools in teaching.',
+        icon_key: 'leaf',
+      },
+    ],
+    updates: [
+      {
+        title: 'Public consultation open',
+        content: 'Parents, teachers and students are invited to share views on the digital skills plan.',
+        update_type: 'info',
+      },
+    ],
+    events: [
+      {
+        title: 'Digital schools information evening',
+        description: 'Open meeting for parents and school staff to discuss the programme.',
+        event_date: makeEventDate(12),
+        location: 'Tromso City Hall',
+        mode: 'hybrid',
+        registration_url: 'https://example.com/demo-digital-schools',
+      },
+    ],
+    attachments: [],
+  },
+  {
+    key: 'demo-cycling-paths',
+    title_no: 'DEMO: Sykkelveinett i sentrum — avsluttet',
+    title_en: 'DEMO: City Centre Cycling Network — Closed',
+    description_no:
+      'En demonstrasjonssak for utbygging av sammenhengende sykkelveier i sentrum. Konsultasjonsperioden er avsluttet og resultatene behandles.',
+    description_en:
+      'A demo policy for expanding the connected cycling network in the city centre. The consultation period has closed and results are being processed.',
+    categoryName: 'Transportation',
+    status: 'closed',
+    isPublished: true,
+    scope: 'district',
+    districtNames: ['Tromsoya'],
+    allowAnonymous: false,
+    tags: ['demo-fixture', 'cycling', 'closed'],
+    topics: [
+      {
+        slug: 'route-planning',
+        label_no: 'Ruteplanlegging',
+        label_en: 'Route planning',
+        description_no: 'Hvilke ruter som bor prioriteres for ny sykkelvei.',
+        description_en: 'Which routes should be prioritised for new cycling infrastructure.',
+        icon_key: 'map-pin',
+      },
+      {
+        slug: 'cyclist-safety',
+        label_no: 'Syklistsikkerhet',
+        label_en: 'Cyclist safety',
+        description_no: 'Tiltak for a oke sikkerheten for syklister langs de prioriterte rutene.',
+        description_en: 'Measures to improve cyclist safety along the prioritised routes.',
+        icon_key: 'shield',
+      },
+    ],
+    updates: [
+      {
+        title: 'Consultation closed',
+        content: 'Thank you to all who submitted views. Results will be published within 30 days.',
+        update_type: 'status_change',
+      },
+    ],
+    events: [],
+    attachments: [],
+  },
+  {
+    key: 'demo-sports-outdoor-plan',
+    title_no: 'Kommunedelplan for idrett og friluftsliv 2027–2032',
+    title_en: 'Municipal Sub-Plan for Sports and Outdoor Life 2027–2032',
+    description_no:
+      'Tromsø kommune arbeider med ny kommunedelplan for idrett og friluftsliv for perioden 2027–2032. Planen skal sikre strategisk utvikling av idrettsanlegg, tilrettelegging for friluftsliv og egenorganisert aktivitet, og videre finansiering gjennom spillemiddelordningen. Innbyggernes innspill er avgjørende for prioriteringene.',
+    description_en:
+      'Tromsø municipality is developing a new sub-plan for sports and outdoor life for 2027–2032. The plan will guide strategic development of sports facilities, outdoor recreation infrastructure and self-organised activity, and secure continued funding through the national grant scheme. Resident input is essential for setting priorities.',
+    categoryName: 'Environment',
+    status: 'active',
+    isPublished: true,
+    scope: 'municipality',
+    districtNames: [],
+    allowAnonymous: true,
+    tags: ['demo-fixture', 'sports', 'outdoor', 'planning'],
+    topics: [
+      {
+        slug: 'idrettsanlegg',
+        label_no: 'Idrettsanlegg og dekningsgrad',
+        label_en: 'Sports facilities and coverage',
+        description_no:
+          'Kartlegging av eksisterende anlegg og framtidig arealbehov for normalhaller, fotballbaner og spesialanlegg i bydelene.',
+        description_en:
+          'Mapping existing facilities and future area needs for multi-use halls, football pitches and specialist venues across districts.',
+        icon_key: 'map-pin',
+      },
+      {
+        slug: 'friluftsliv',
+        label_no: 'Friluftsliv og tilgjengelighet',
+        label_en: 'Outdoor recreation and accessibility',
+        description_no:
+          'Tilrettelegging av friluftsomrader, ferdselsårer og utfartsparkeringer – med særlig fokus på universell utforming og naturbasert reiseliv.',
+        description_en:
+          'Developing outdoor areas, trails and trailhead parking – with particular focus on universal access and nature-based tourism.',
+        icon_key: 'leaf',
+      },
+      {
+        slug: 'egenorganisert',
+        label_no: 'Egenorganisert aktivitet',
+        label_en: 'Self-organised activity',
+        description_no:
+          'Anlegg som er åpne for alle uten tilknytning til organisert idrett: lekeplasser, løkker, skatepark og rullesportanlegg.',
+        description_en:
+          'Facilities open to everyone without club membership: playgrounds, ball courts, skate parks and wheelsport venues.',
+        icon_key: 'clock',
+      },
+      {
+        slug: 'baerekraft-idrett',
+        label_no: 'Klima og bærekraft',
+        label_en: 'Climate and sustainability',
+        description_no:
+          'Hvordan anlegg og transport til aktiviteter kan gjøres mer klimavennlige, inkludert utskifting av kunstgressbaner og smartere lokalisering.',
+        description_en:
+          'How facilities and travel to activities can become more climate-friendly, including artificial turf replacement and smarter facility siting.',
+        icon_key: 'shield',
+      },
+    ],
+    updates: [
+      {
+        title: 'Planprogram sendt på høring',
+        content:
+          'Planprogrammet for kommunedelplan for idrett og friluftsliv 2027–2032 er nå sendt på offentlig høring. Frist for innspill er 1. mai 2026.',
+        update_type: 'info',
+      },
+    ],
+    events: [
+      {
+        title: 'Åpent møte om idrett og friluftsliv',
+        description:
+          'Innbyggere, lag og foreninger inviteres til å gi innspill til den nye kommunedelplanen for idrett og friluftsliv.',
+        event_date: makeEventDate(18),
+        location: 'Tromsø rådhus',
+        mode: 'hybrid',
+        registration_url: 'https://example.com/demo-sports-outdoor-plan',
+      },
+    ],
+    attachments: [
+      {
+        fileName: 'planprogram-idrett-friluftsliv-2027-2032.txt',
+        fileType: 'text/plain',
+        content:
+          'Planprogram for kommunedelplan for idrett og friluftsliv 2027–2032, Tromsø kommune.\n\nFormål: Sikre videre utvikling og finansiering av anlegg gjennom spillemiddelordningen, og møte fremtidige behov i en voksende og mangfoldig befolkning.\n\nHovedtemaer for utredning:\n- Idrettsanlegg: dekningsgrad i bydelene, normalhaller, fotballbaner, spesialanlegg\n- Friluftsliv: ferdselsårer, utfartsparkeringer, universell tilgjengelighet\n- Egenorganisert aktivitet: lekeplasser, løkker, rullesportanlegg\n- Klima og bærekraft: klimavennlige anlegg, transportreduksjon\n- Naturbasert reiseliv og forvaltning av utfartsområder\n\nPlanperiode: 2027–2032. Vedtak planlagt innen utgangen av 2026.',
+      },
+    ],
+  },
+  {
+    key: 'demo-antiracism-plan',
+    title_no: 'Plan mot rasisme og diskriminering',
+    title_en: 'Plan Against Racism and Discrimination',
+    description_no:
+      'Tromsø kommune har utarbeidet en temaplan mot rasisme og diskriminering. Planen inneholder 19 konkrete tiltak organisert i fem temabolker: analyse og varsling, mangfold i rekruttering, antirasistisk praksis, inkludering og demokrati, samt sannhet og forsoning. Høringsutkastet er nå åpent for innspill fra innbyggere.',
+    description_en:
+      'Tromsø municipality has developed a thematic plan against racism and discrimination. The plan contains 19 concrete measures organised in five topic blocks: analysis and reporting, diversity in recruitment, anti-racist practice, inclusion and democracy, and truth and reconciliation. The hearing draft is now open for resident input.',
+    categoryName: 'Culture',
+    status: 'active',
+    isPublished: true,
+    scope: 'municipality',
+    districtNames: [],
+    allowAnonymous: true,
+    tags: ['demo-fixture', 'inclusion', 'equality', 'culture'],
+    topics: [
+      {
+        slug: 'antirasistisk-praksis',
+        label_no: 'Antirasistisk praksis',
+        label_en: 'Anti-racist practice',
+        description_no:
+          'Kommunen vil heve kompetansen blant ansatte og ledere, formidle nulltoleranse for rasisme og synliggjøre mangfold på kommunale arenaer.',
+        description_en:
+          'The municipality will improve staff and management competence, communicate zero tolerance for racism, and make diversity visible in municipal spaces.',
+        icon_key: 'shield',
+      },
+      {
+        slug: 'inkludering-deltakelse',
+        label_no: 'Inkludering og demokratisk deltakelse',
+        label_en: 'Inclusion and democratic participation',
+        description_no:
+          'Sikre trygge og inkluderende møteplasser, økt deltakelse i kultur- og fritidstilbud og god kommunikasjon til alle innbyggere.',
+        description_en:
+          'Ensuring safe and inclusive meeting places, increased participation in cultural and leisure activities, and good communication with all residents.',
+        icon_key: 'home',
+      },
+      {
+        slug: 'mangfold-rekruttering',
+        label_no: 'Mangfold i rekruttering',
+        label_en: 'Diversity in recruitment',
+        description_no:
+          'Inkluderende rekrutterings- og utviklingsprosesser i kommunen for å øke representasjon og redusere diskriminering i arbeidslivet.',
+        description_en:
+          'Inclusive recruitment and development processes in the municipality to increase representation and reduce workplace discrimination.',
+        icon_key: 'coins',
+      },
+      {
+        slug: 'sannhet-forsoning',
+        label_no: 'Sannhet og forsoning',
+        label_en: 'Truth and reconciliation',
+        description_no:
+          'Tromsø vil være en forsoningskommune med handlingsplan for forsoning, kompetanseheving om samisk og kvensk kultur, og forebygging av hets mot urfolk.',
+        description_en:
+          'Tromsø aims to be a reconciliation municipality, with an action plan, competence-building on Sámi and Kven culture, and prevention of discrimination against indigenous peoples.',
+        icon_key: 'map-pin',
+      },
+    ],
+    updates: [
+      {
+        title: 'Høringsutkast publisert',
+        content:
+          'Høringsutkastet til Plan mot rasisme og diskriminering er nå tilgjengelig for offentlig høring. Alle innbyggere og organisasjoner oppfordres til å gi innspill.',
+        update_type: 'info',
+      },
+    ],
+    events: [
+      {
+        title: 'Høring: Plan mot rasisme og diskriminering',
+        description:
+          'Åpent høringsmøte der innbyggere, organisasjoner og næringslivet kan gi innspill til kommunens plan mot rasisme og diskriminering.',
+        event_date: makeEventDate(21),
+        location: 'Tromsø kulturhus',
+        mode: 'hybrid',
+        registration_url: 'https://example.com/demo-antiracism-plan',
+      },
+    ],
+    attachments: [
+      {
+        fileName: 'plan-mot-rasisme-diskriminering-horingsutkast.txt',
+        fileType: 'text/plain',
+        content:
+          'Plan mot rasisme og diskriminering – Tromsø kommune – høringsutkast\n\nTiltakene er organisert i fem temabolker:\n\n1. Analyse, styring og varsling\n   - Felles standard for registrering og varsling av diskriminerende hendelser\n   - Systematisk bruk av diskrimineringsdata i styring og planverk\n   - Helhetlige språk- og informasjonsløsninger\n\n2. Mangfold i rekruttering og kultursensitiv praksis\n   - Inkluderende rekruttering og arbeidsmiljø i kommunen\n   - Løfte mangfoldskompetanse i næringslivet\n\n3. Antirasistisk praksis\n   - Nulltoleranse for rasisme i Tromsø kommune\n   - Synlighets- og holdningskampanjer\n   - Systematisk kompetanseheving om rasisme og minoriteters rettigheter\n\n4. Inkludering, demokrati og deltakelse\n   - Barn og unge i holdningsskapende arbeid\n   - Inkluderende møteplasser i bydeler og distrikter\n   - Økt deltakelse i kultur- og fritidstilbud\n\n5. Sannhet og forsoning\n   - Handlingsplan for forsoning\n   - Kompetanseheving om samisk og kvensk kultur og fornorskingspolitikken\n   - Forebygging av hets mot urfolk og nasjonale minoritetsgrupper',
+      },
+    ],
+  },
 ];
 
 export const LEGACY_POLICY_IDS = [

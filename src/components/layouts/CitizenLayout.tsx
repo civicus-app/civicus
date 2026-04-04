@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Menu, X } from 'lucide-react';
+import { Bell, House, LogOut, Menu, ScrollText, UserRound, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import NotificationBell from '../common/NotificationBell';
@@ -9,16 +9,60 @@ import CitizenBottomNav from '../citizen/CitizenBottomNav';
 import { APP_NAME } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import { useLanguageStore } from '../../store/languageStore';
-import homeIcon from '../../assets/nav-icons/home.png';
-import policiesIcon from '../../assets/nav-icons/policies.png';
-import alertsIcon from '../../assets/nav-icons/alerts.png';
-import profileIcon from '../../assets/nav-icons/profile.png';
 
 const navLinks = [
-  { to: '/home', labelNo: 'Hjem', labelEn: 'Home', icon: homeIcon },
-  { to: '/policies', labelNo: 'Politikk', labelEn: 'Policies', icon: policiesIcon },
-  { to: '/profile', labelNo: 'Profil', labelEn: 'Profile', icon: profileIcon },
+  { to: '/home', labelNo: 'Hjem', labelEn: 'Home', icon: House },
+  { to: '/policies', labelNo: 'Politikk', labelEn: 'Policies', icon: ScrollText },
+  { to: '/profile', labelNo: 'Profil', labelEn: 'Profile', icon: UserRound },
 ];
+
+type NavLinkItem = {
+  to: string;
+  labelNo: string;
+  labelEn: string;
+  icon: LucideIcon;
+};
+
+const isCurrentRoute = (pathname: string, to: string) => {
+  if (to === '/home') {
+    return pathname === '/home';
+  }
+
+  return pathname === to || pathname.startsWith(`${to}/`);
+};
+
+function NavigationLink({ to, labelNo, labelEn, icon: Icon, active, language }: NavLinkItem & { active: boolean; language: 'no' | 'en' }) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        'flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition-colors',
+        active
+          ? 'bg-white text-[#214f8b] shadow-[0_10px_25px_rgba(17,44,85,0.18)]'
+          : 'text-[#dceafd] hover:bg-white/12 hover:text-white'
+      )}
+    >
+      <Icon className={cn('h-4.5 w-4.5', active ? 'text-[#214f8b]' : 'text-[#c7ddff]')} strokeWidth={2.1} />
+      <span>{language === 'en' ? labelEn : labelNo}</span>
+    </Link>
+  );
+}
+
+function MobileNavigationLink({ to, labelNo, labelEn, icon: Icon, active, language, onSelect }: NavLinkItem & { active: boolean; language: 'no' | 'en'; onSelect: () => void }) {
+  return (
+    <Link
+      to={to}
+      onClick={onSelect}
+      className={cn(
+        'flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors',
+        active ? 'bg-white/20 text-white' : 'text-[#dceafd] hover:bg-white/10 hover:text-white'
+      )}
+    >
+      <Icon className={cn('h-4.5 w-4.5', active ? 'text-white' : 'text-[#c7ddff]')} strokeWidth={2.1} />
+      <span>{language === 'en' ? labelEn : labelNo}</span>
+    </Link>
+  );
+}
 
 export default function CitizenLayout() {
   const { profile, signOut, isAdmin } = useAuth();
@@ -45,12 +89,12 @@ export default function CitizenLayout() {
   return (
     <div className="min-h-screen bg-[#e9eef6]">
       {!hideTopNavigation ? (
-        <header className="bg-gradient-to-r from-[#1f4f92] via-[#2d66b4] to-[#3b79c9] shadow-lg sticky top-0 z-40 border-b border-white/20">
-          <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="h-[76px] flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
+        <header className="sticky top-0 z-40 border-b border-white/20 bg-gradient-to-r from-[#1f4f92] via-[#2d66b4] to-[#3b79c9] shadow-lg backdrop-blur">
+          <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
+            <div className="flex min-h-[72px] items-center justify-between gap-3 py-3 md:gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6 lg:py-0">
+              <div className="flex min-w-0 items-center gap-3">
                 <button
-                  className="md:hidden p-2 rounded-full text-white hover:bg-white/15"
+                  className="rounded-full border border-white/20 bg-white/12 p-2 text-white shadow-sm transition-colors hover:bg-white/18 md:hidden"
                   onClick={() => setMobileOpen(!mobileOpen)}
                 >
                   {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -62,103 +106,92 @@ export default function CitizenLayout() {
                   aria-label={tx('Ga til hjem', 'Go to home')}
                 >
                   <BrandMark
-                    className="h-12 w-12 rounded-full border-white/45 bg-white/20 p-[4%] sm:h-[3.15rem] sm:w-[3.15rem]"
+                    className="h-11 w-11 rounded-full border-white/45 bg-white/20 p-[4%] sm:h-[3.2rem] sm:w-[3.2rem]"
                     imageClassName="scale-[1.08]"
                   />
                   <div className="min-w-0">
-                    <h1 className="text-white font-semibold text-[1.1rem] sm:text-[1.35rem] leading-tight truncate font-display">
+                    <p className="text-[0.62rem] font-semibold uppercase tracking-[0.26em] text-white/70 sm:text-[0.68rem]">
+                      {tx('Innbygger', 'Citizen')}
+                    </p>
+                    <h1 className="truncate font-display text-[1.1rem] font-semibold leading-tight text-white sm:text-[1.35rem]">
                       {APP_NAME}
                     </h1>
                   </div>
                 </Link>
               </div>
 
-              <nav className="hidden md:flex items-center gap-2 rounded-[22px] border border-white/18 bg-white/10 p-1.5 backdrop-blur">
-                {navLinks.map(({ to, labelNo, labelEn, icon }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    className={cn(
-                      'flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors',
-                      location.pathname === to
-                        ? 'bg-white text-[#265699] shadow-[0_10px_25px_rgba(17,44,85,0.18)]'
-                        : 'text-white/90 hover:bg-white/10 hover:text-white'
-                    )}
-                  >
-                    <img src={icon} alt="" className="h-5 w-5 object-contain" />
-                    <span>{language === 'en' ? labelEn : labelNo}</span>
-                  </Link>
+              <nav className="hidden items-center gap-2 justify-self-center rounded-full border border-white/18 bg-white/12 p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] md:flex">
+                {navLinks.map((link) => (
+                  <NavigationLink
+                    key={link.to}
+                    {...link}
+                    active={isCurrentRoute(location.pathname, link.to)}
+                    language={language}
+                  />
                 ))}
               </nav>
 
-              <div className="flex items-center gap-2 sm:gap-3">
-                <LanguageToggle className="hidden sm:block border-white/20 bg-white/10 shadow-none" />
+              <div className="flex items-center gap-2 justify-self-end sm:gap-3">
+                <LanguageToggle tone="dark" className="hidden sm:block" />
 
                 <NotificationBell
                   theme="dark"
-                  triggerClassName="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10"
+                  triggerClassName="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/12 text-white shadow-sm transition-colors hover:bg-white/18"
                   badgeClassName="right-0 top-0 min-w-[1rem] px-1.5 py-0.5 text-[10px]"
                 >
-                  <img src={alertsIcon} alt="" className="h-5 w-5 object-contain" />
+                  <Bell className="h-5 w-5 text-white" strokeWidth={2.1} />
                 </NotificationBell>
 
                 {isAdmin && (
                   <Link
                     to="/admin"
-                    className="hidden sm:inline-flex h-9 px-3 rounded-md bg-white/15 text-white text-sm items-center hover:bg-white/25 transition-colors"
+                    className="hidden h-9 items-center rounded-full border border-white/24 bg-white/14 px-3 text-sm text-white transition-colors hover:bg-white/22 sm:inline-flex"
                   >
                     {tx('Admin', 'Admin')}
                   </Link>
                 )}
 
-                <div className="hidden sm:flex items-center gap-2 px-2 py-1 rounded-full bg-white/10 border border-white/20">
-                  <div className="h-8 w-8 rounded-full bg-white text-[#275ca4] flex items-center justify-center text-xs font-semibold">
+                <div className="hidden items-center gap-2 rounded-full border border-white/18 bg-white/12 px-2 py-1 shadow-sm sm:flex">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-xs font-semibold text-[#275ca4]">
                     {initials}
                   </div>
-                  <span className="text-white text-sm font-medium max-w-[140px] truncate">
+                  <span className="max-w-[140px] truncate text-sm font-medium text-white">
                     {profile?.full_name}
                   </span>
                 </div>
 
                 <button
                   onClick={handleSignOut}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
+                  className="inline-flex h-10 items-center gap-2 rounded-full border border-white/24 bg-white px-2.5 text-sm font-medium text-[#1f4f92] shadow-sm transition-colors hover:bg-[#eef4ff] sm:px-3"
                   title={tx('Logg ut', 'Sign out')}
                 >
                   <LogOut className="h-5 w-5" />
-                  <span>{tx('Logg ut', 'Sign out')}</span>
+                  <span className="hidden sm:inline">{tx('Logg ut', 'Sign out')}</span>
                 </button>
               </div>
             </div>
           </div>
 
           {mobileOpen && (
-            <div className="md:hidden border-t border-white/20 bg-[#275da5]">
+            <div className="border-t border-white/20 bg-[#275da5] md:hidden">
               <div className="px-4 pt-4">
-                <LanguageToggle className="inline-flex border-white/20 bg-white/10 shadow-none" />
+                <LanguageToggle tone="dark" className="inline-flex" />
               </div>
-              {navLinks.map(({ to, labelNo, labelEn, icon }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    'flex items-center space-x-3 px-4 py-3 text-sm font-medium',
-                    location.pathname === to
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/90 hover:bg-white/10'
-                  )}
-                >
-                  <img src={icon} alt="" className="h-4 w-4 object-contain" />
-                  <span>{language === 'en' ? labelEn : labelNo}</span>
-                </Link>
+              {navLinks.map((link) => (
+                <MobileNavigationLink
+                  key={link.to}
+                  {...link}
+                  active={isCurrentRoute(location.pathname, link.to)}
+                  language={language}
+                  onSelect={() => setMobileOpen(false)}
+                />
               ))}
               <button
                 onClick={() => {
                   setMobileOpen(false);
                   void handleSignOut();
                 }}
-                className="flex w-full items-center space-x-3 px-4 py-3 text-left text-sm font-medium text-white/90 hover:bg-white/10"
+                className="flex w-full items-center space-x-3 px-4 py-3 text-left text-sm font-medium text-white/92 hover:bg-white/10"
               >
                 <LogOut className="h-4 w-4" />
                 <span>{tx('Logg ut', 'Sign out')}</span>

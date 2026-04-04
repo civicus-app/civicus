@@ -66,14 +66,14 @@ export default function FeedbackSentimentPage() {
 
   return (
     <CivicusMobileShell compact backTo={`/policies/${id}/verifisering`}>
-      <form onSubmit={onSubmit} className="space-y-4 rounded-[24px] bg-[#dfdfdf] px-4 py-5">
+      <form onSubmit={onSubmit} className="space-y-4 rounded-[24px] bg-[#dfdfdf] px-4 py-5 sm:px-5">
         <BrandMark className="mx-auto h-14 w-14 rounded-xl border-[#b8d7ea]" />
 
-        <h1 className="text-center text-[2rem] font-extrabold leading-tight text-[#0d87c5]">
+        <h1 className="text-center text-[1.7rem] font-extrabold leading-tight text-[#0d87c5] sm:text-[2rem]">
           {tx('Gi din tilbakemelding', 'Share your feedback')}
         </h1>
 
-        <div className="flex justify-between gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
           {sentimentOptions.map((option) => {
             const selected = selectedSentiment === option.value;
             return (
@@ -81,7 +81,7 @@ export default function FeedbackSentimentPage() {
                 key={option.value}
                 type="button"
                 onClick={() => setSelectedSentiment(option.value)}
-                className={`flex-1 rounded-2xl px-2 py-2 text-center ${
+                className={`rounded-2xl px-2 py-3 text-center ${
                   selected ? 'bg-[#f6de54] ring-2 ring-[#d3b42d]' : 'bg-[#f3e68b]'
                 }`}
               >
@@ -107,7 +107,7 @@ export default function FeedbackSentimentPage() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-xl bg-[#168ec2] px-4 py-3 text-2xl font-semibold text-white disabled:opacity-50"
+          className="w-full rounded-2xl bg-[#168ec2] px-4 py-3 text-xl font-semibold text-white disabled:opacity-50 sm:text-2xl"
         >
           {submitting ? tx('Sender...', 'Submitting...') : tx('Send', 'Submit')}
         </button>

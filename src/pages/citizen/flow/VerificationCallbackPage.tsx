@@ -65,17 +65,17 @@ export default function VerificationCallbackPage() {
 
   return (
     <CivicusMobileShell compact>
-      <div className="space-y-4 text-center">
+      <div className="space-y-4 text-center sm:space-y-5">
         <div
-          className={`mx-auto h-16 w-16 rounded-full grid place-items-center text-white text-2xl ${
+          className={`mx-auto grid h-16 w-16 place-items-center rounded-full text-xl text-white sm:h-20 sm:w-20 sm:text-2xl ${
             status === 'error' ? 'bg-red-500' : 'bg-[#1d95ca]'
           }`}
         >
           {status === 'success' ? 'OK' : status === 'error' ? 'X' : '...'}
         </div>
 
-        <h1 className="text-2xl font-bold text-[#187fb2]">{tx('Verifisering', 'Verification')}</h1>
-        <p className="text-[#4b6680]">{message}</p>
+        <h1 className="text-2xl font-bold text-[#187fb2] sm:text-3xl">{tx('Verifisering', 'Verification')}</h1>
+        <p className="text-sm text-[#4b6680] sm:text-base">{message}</p>
 
         {status === 'error' ? (
           <Link to="/home" className="inline-block rounded-xl bg-[#1d95ca] px-4 py-2 text-white">

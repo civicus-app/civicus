@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { Badge } from '../ui/badge';
 import type { DashboardMetrics, EngagementAnalytics } from '../../types/policy.types';
 import { useLanguageStore } from '../../store/languageStore';
@@ -20,6 +20,13 @@ const COLORS = {
   neutral: '#f29b2a',
   negative: '#e54545',
 };
+
+const STATUS_LABELS = {
+  draft: { no: 'Utkast', en: 'Draft' },
+  active: { no: 'Aktiv', en: 'Active' },
+  under_review: { no: 'Under vurdering', en: 'Under review' },
+  closed: { no: 'Lukket', en: 'Closed' },
+} as const;
 
 export default function SentimentOverviewPanel({
   sentiment,
@@ -47,22 +54,29 @@ export default function SentimentOverviewPanel({
   const policyRows =
     rows && rows.length
       ? rows
-      : activeAnalytics.slice(0, 4).map((item) => ({
+      : activeAnalytics.map((item) => ({
           title: item.title,
           status: item.status as 'draft' | 'active' | 'under_review' | 'closed',
           engagement: item.engaged_users,
           rate: Math.round((item.engaged_users / maxEngagement) * 100),
         }));
+  const sortedPolicyRows = [...policyRows].sort((a, b) => b.engagement - a.engagement);
+  const mobilePolicyRows = sortedPolicyRows.slice(0, 4).map((item, index) => ({
+    ...item,
+    shortLabel: `P${index + 1}`,
+  }));
+  const formatStatusLabel = (status: keyof typeof STATUS_LABELS) =>
+    language === 'en' ? STATUS_LABELS[status].en : STATUS_LABELS[status].no;
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-[#d4dde9] bg-white shadow-sm">
+    <div className="flex h-full flex-col">
       <div className="border-b border-[#d8e0eb] px-5 py-4">
         <h2 className="text-xl font-semibold text-[#2a4a70] sm:text-2xl">
           {tx('Stemningsoversikt', 'Sentiment overview')}
         </h2>
       </div>
 
-      <div className="space-y-6 p-4 lg:p-5">
+      <div className="space-y-6 p-4 sm:flex-1 sm:overflow-y-auto lg:p-5">
         <div className="flex flex-col items-center justify-center gap-5 text-center">
           <div className="relative mx-auto h-[150px] w-[150px] shrink-0 sm:h-[170px] sm:w-[170px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -132,8 +146,8 @@ export default function SentimentOverviewPanel({
               </p>
               <p className="mt-1 text-xs text-[#617792]">
                 {tx(
-                  'De fire sakene med hoyest aktivitet i valgt periode',
-                  'The four policies with the highest activity in the selected period'
+                  'Saker med aktivitet i valgt periode',
+                  'Policies with activity in the selected period'
                 )}
               </p>
             </div>
@@ -145,45 +159,105 @@ export default function SentimentOverviewPanel({
             </Link>
           </div>
 
-          <div className="mt-4 space-y-3">
-            {policyRows.length ? (
-              policyRows.map((item) => (
-                <div
-                  key={`${item.title}-${item.status}`}
-                  className="rounded-2xl border border-[#dde5ef] bg-white px-4 py-3"
-                >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-[#173151]">
-                        {item.title}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <Badge variant={item.status}>
-                          {item.status.replace('_', ' ')}
-                        </Badge>
-                        <span className="text-xs text-[#617792]">
-                          {item.engagement.toLocaleString()} {tx('engasjerte', 'engaged')}
-                        </span>
-                      </div>
+          <div className="mt-4">
+            {sortedPolicyRows.length ? (
+              <>
+                <div className="sm:hidden">
+                  <div className="rounded-2xl border border-[#dde5ef] bg-white p-3 shadow-sm">
+                    <div className="h-[164px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={mobilePolicyRows} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+                          <CartesianGrid vertical={false} stroke="#edf2f7" />
+                          <XAxis
+                            dataKey="shortLabel"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#5d7593', fontSize: 10, fontWeight: 700 }}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#7b91aa', fontSize: 10 }}
+                            width={26}
+                          />
+                          <Bar dataKey="engagement" radius={[8, 8, 0, 0]} fill="#2f73c3" maxBarSize={42} />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
 
-                    <div className="md:min-w-[180px]">
-                      <div className="flex items-center justify-between gap-3 text-xs text-[#617792]">
-                        <span className="pr-2">{tx('Engasjementsgrad', 'Engagement rate')}</span>
-                        <span className="shrink-0 font-semibold text-[#173151]">{item.rate}%</span>
-                      </div>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#e8eef5]">
+                    <div className="mt-3 space-y-2">
+                      {mobilePolicyRows.map((item) => (
                         <div
-                          className="h-full rounded-full bg-[linear-gradient(90deg,#2f73c3_0%,#7aa6dd_100%)]"
-                          style={{ width: `${Math.max(4, Math.min(100, item.rate))}%` }}
-                        />
-                      </div>
+                          key={`${item.shortLabel}-${item.title}-${item.status}`}
+                          className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-[#e6edf5] bg-[#fbfcfe] px-3 py-2"
+                        >
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#eaf2fb] text-[11px] font-semibold text-[#2f73c3]">
+                            {item.shortLabel}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold text-[#173151]">{item.title}</p>
+                            <p className="text-[11px] text-[#6b7f99]">{formatStatusLabel(item.status)}</p>
+                          </div>
+                          <span className="text-xs font-semibold tabular-nums text-[#173151]">
+                            {item.engagement.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              ))
+
+                <div className="hidden flex-wrap gap-3 sm:flex">
+                  {sortedPolicyRows.slice(0, 4).map((item, index) => (
+                    <div
+                      key={`${item.title}-${item.status}`}
+                      className="flex flex-col items-center rounded-xl border border-[#dde5ef] bg-white px-3 py-3 text-center shadow-sm"
+                    >
+                      <p className="truncate text-xs font-semibold text-[#173151] w-24">
+                        {item.title}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Badge variant={item.status} className="text-[10px] px-2 py-0.5">
+                          {formatStatusLabel(item.status)}
+                        </Badge>
+                      </div>
+                      <div className="mt-3 relative h-16 w-16">
+                        <svg className="h-full w-full transform -rotate-90" viewBox="0 0 60 60">
+                          <circle
+                            cx="30"
+                            cy="30"
+                            r="26"
+                            fill="none"
+                            stroke="#e8eef5"
+                            strokeWidth="4"
+                          />
+                          <circle
+                            cx="30"
+                            cy="30"
+                            r="26"
+                            fill="none"
+                            stroke={`url(#grad-${index})`}
+                            strokeWidth="4"
+                            strokeDasharray={`${(item.rate / 100) * (2 * Math.PI * 26)} ${2 * Math.PI * 26}`}
+                            strokeLinecap="round"
+                          />
+                          <defs>
+                            <linearGradient id={`grad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#2f73c3" />
+                              <stop offset="100%" stopColor="#7aa6dd" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-lg font-bold text-[#173151]">{item.rate}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
-              <div className="rounded-2xl border border-dashed border-[#d5deea] bg-white px-4 py-8 text-center text-sm text-[#5a7190]">
+              <div className="rounded-2xl border border-dashed border-[#d5deea] bg-white px-4 py-6 text-center text-sm text-[#5a7190]">
                 {tx('Ingen engasjementsdata tilgjengelig enda.', 'No engagement analytics available yet.')}
               </div>
             )}

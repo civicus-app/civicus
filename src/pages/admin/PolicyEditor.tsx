@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Eye, Plus, Trash2, Upload } from 'lucide-react';
 import { useAdminPolicyWorkspace } from '../../hooks/useAdmin';
@@ -83,6 +83,7 @@ export default function PolicyEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!workspace) return;
@@ -189,12 +190,33 @@ export default function PolicyEditor() {
 
       const savedPolicyId = await saveWorkspace(payload);
 
+
       if (pendingFiles.length > 0) {
-        const uploaded = await Promise.all(
-          pendingFiles.map((file) => uploadPolicyAttachment(savedPolicyId, file, user?.id))
-        );
-        setAttachments((current) => [...current, ...uploaded]);
-        setPendingFiles([]);
+        try {
+          const uploaded = await Promise.all(
+            pendingFiles.map((file) => uploadPolicyAttachment(savedPolicyId, file, user?.id))
+          );
+          setAttachments((current) => [...current, ...uploaded]);
+          setPendingFiles([]);
+        } catch (uploadErr) {
+          // Check for RLS error (verified session required)
+          const rlsMsg =
+            typeof uploadErr === 'object' && uploadErr !== null && 'message' in uploadErr
+              ? String(uploadErr.message)
+              : String(uploadErr);
+          if (rlsMsg.includes('row-level security policy') && rlsMsg.includes('verified session')) {
+            setError(
+              tx(
+                'Du må verifisere økten din (f.eks. via tofaktor eller godkjent enhet) for å laste opp vedlegg.',
+                'You must verify your session (e.g., MFA or trusted device) to upload attachments.'
+              )
+            );
+            setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+            return;
+          } else {
+            throw uploadErr;
+          }
+        }
       }
 
       setSuccess(tx('Saken ble lagret', 'Policy saved'));
@@ -204,7 +226,14 @@ export default function PolicyEditor() {
         await refetch();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : tx('Kunne ikke lagre saken', 'Failed to save policy'));
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : tx('Kunne ikke lagre saken', 'Failed to save policy');
+      setError(msg);
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
     } finally {
       setSaving(false);
     }
@@ -239,7 +268,7 @@ export default function PolicyEditor() {
         <div className="flex flex-wrap gap-3">
           {activePolicyId ? (
             <Button asChild variant="outline" className="rounded-full">
-              <Link to={`/policies/${activePolicyId}/klassisk`}>
+              <Link to={`/admin/policies/${activePolicyId}/preview`}>
                 <Eye className="mr-2 h-4 w-4" />
                 {tx('Forhandsvisning', 'Preview')}
               </Link>
@@ -257,7 +286,7 @@ export default function PolicyEditor() {
         </div>
       </div>
 
-      {error ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
+      {error ? <div ref={errorRef} className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
       {success ? <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{success}</div> : null}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.45fr_0.95fr]">
@@ -579,7 +608,7 @@ export default function PolicyEditor() {
                   {tx(`Status: ${form.status}`, `Status: ${form.status}`)}
                 </p>
                 {activePolicyId ? (
-                  <Link to={`/policies/${activePolicyId}/klassisk`} className="mt-3 inline-flex text-sm font-medium text-[#24589d] hover:underline">
+                  <Link to={`/admin/policies/${activePolicyId}/preview`} className="mt-3 inline-flex text-sm font-medium text-[#24589d] hover:underline">
                     {tx('Apne innbyggervisning', 'Open citizen preview')}
                   </Link>
                 ) : null}

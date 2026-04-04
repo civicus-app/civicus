@@ -22,27 +22,27 @@ export default function CommunityPulseSnapshotPage() {
   return (
     <div className="pb-28">
       <CivicusMobileShell compact>
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           <div className="flex items-center gap-3">
-            <BrandMark className="h-11 w-11 rounded-lg border-[#b8d7ea]" />
-            <h1 className="text-[3rem] font-extrabold text-[#1088c3]">CIVICUS</h1>
+            <BrandMark className="h-10 w-10 rounded-lg border-[#b8d7ea] sm:h-11 sm:w-11" />
+            <h1 className="text-[2rem] font-extrabold text-[#1088c3] sm:text-[3rem]">CIVICUS</h1>
           </div>
 
-          <h2 className="text-center text-[2.2rem] font-extrabold text-[#1088c3]">
+          <h2 className="text-center text-[1.8rem] font-extrabold text-[#1088c3] sm:text-[2.2rem]">
             {tx('Fellescapets Puls', 'Community Pulse')}
           </h2>
 
-          <div className="relative mx-auto h-[230px] w-full">
+          <div className="relative mx-auto h-[200px] w-full overflow-hidden rounded-[20px] bg-[#f6f8fb] sm:h-[230px] sm:bg-transparent">
             {cloudWords.map((word) => (
-              <span key={word.text} className={`absolute font-medium ${word.style}`}>
+              <span key={word.text} className={`absolute max-w-[45%] text-center font-medium leading-none ${word.style}`}>
                 {word.text}
               </span>
             ))}
           </div>
 
-          <article className="rounded-[24px] bg-[#dfdfdf] px-6 py-5 text-[#252525]">
-            <h3 className="text-[2rem] font-bold">{tx('Vedtak fra kommunen:', 'Decision from municipality:')}</h3>
-            <p className="mt-2 text-[1.9rem] leading-10">
+          <article className="rounded-[24px] bg-[#dfdfdf] px-4 py-4 text-[#252525] sm:px-6 sm:py-5">
+            <h3 className="text-[1.4rem] font-bold sm:text-[2rem]">{tx('Vedtak fra kommunen:', 'Decision from municipality:')}</h3>
+            <p className="mt-2 text-[1.1rem] leading-7 sm:text-[1.9rem] sm:leading-10">
               {tx('Basert pa 400 tilbakemeldinger', 'Based on 400 responses')}
               <br />
               {tx('om oss, er anleggsperiode', 'from residents, construction period')}

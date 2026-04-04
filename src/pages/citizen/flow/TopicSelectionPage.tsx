@@ -56,11 +56,11 @@ export default function TopicSelectionPage() {
 
   return (
     <CivicusMobileShell backTo={`/policies/${id}`}>
-      <div className="space-y-6 text-center">
-        <BrandMark className="mx-auto h-16 w-16 rounded-xl border-[#b8d7ea]" />
+      <div className="space-y-5 text-center sm:space-y-6">
+        <BrandMark className="mx-auto h-14 w-14 rounded-xl border-[#b8d7ea] sm:h-16 sm:w-16" />
 
         <div>
-          <h1 className="text-[2.1rem] font-extrabold leading-tight text-[#0d87c5] drop-shadow-[0_2px_2px_rgba(8,41,65,0.18)]">
+          <h1 className="text-[1.7rem] font-extrabold leading-tight text-[#0d87c5] drop-shadow-[0_2px_2px_rgba(8,41,65,0.18)] sm:text-[2.1rem]">
             {policy ? getPolicyTitle(policy, language) : tx('Aktiv kommunal sak', 'Active municipal policy')}
           </h1>
           <p className="mt-2 text-sm text-[#4d6f8a]">
@@ -71,17 +71,17 @@ export default function TopicSelectionPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 gap-3 pt-2 min-[420px]:grid-cols-2 sm:gap-4">
           {topics.map((topic) => {
             const Icon = TOPIC_ICONS[topic.icon_key ?? ''] ?? TOPIC_ICONS[topic.slug] ?? Bike;
             return (
               <Link
                 key={topic.slug}
                 to={`/policies/${id}/topic/${topic.slug}`}
-                className="rounded-[22px] bg-[#1b87bb] px-3 py-6 text-white shadow hover:brightness-95"
+                className="rounded-[22px] bg-[#1b87bb] px-3 py-5 text-white shadow hover:brightness-95 sm:py-6"
               >
-                <Icon className="mx-auto h-9 w-9" />
-                <p className="mt-3 text-lg font-semibold leading-tight">
+                <Icon className="mx-auto h-8 w-8 sm:h-9 sm:w-9" />
+                <p className="mt-3 text-base font-semibold leading-tight sm:text-lg">
                   {language === 'en' ? topic.label_en : topic.label_no}
                 </p>
               </Link>
@@ -89,7 +89,7 @@ export default function TopicSelectionPage() {
           })}
         </div>
 
-        <p className="pt-2 text-lg font-semibold text-[#2b7cad]">
+        <p className="pt-2 text-base font-semibold text-[#2b7cad] sm:text-lg">
           {tx('Trykk pa et kort for detaljer', 'Tap a card for details')}
         </p>
       </div>

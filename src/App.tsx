@@ -7,6 +7,7 @@ const CitizenLayout = lazy(() => import('./components/layouts/CitizenLayout'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminPolicies = lazy(() => import('./pages/admin/Policies'));
 const PolicyEditor = lazy(() => import('./pages/admin/PolicyEditor'));
+const PolicyPreview = lazy(() => import('./pages/admin/PolicyPreview'));
 const Analytics = lazy(() => import('./pages/admin/Analytics'));
 const Users = lazy(() => import('./pages/admin/Users'));
 const Settings = lazy(() => import('./pages/admin/Settings'));
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="/admin/policies" element={<AdminPolicies />} />
           <Route path="/admin/policies/new" element={<PolicyEditor />} />
           <Route path="/admin/policies/:id/edit" element={<PolicyEditor />} />
+          <Route path="/admin/policies/:id/preview" element={<PolicyPreview />} />
           <Route path="/admin/analytics" element={<Analytics />} />
           <Route path="/admin/users" element={<Users />} />
           <Route path="/admin/settings" element={<Settings />} />

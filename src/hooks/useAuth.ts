@@ -8,6 +8,18 @@ import { useAuthStore } from '../store/authStore';
 
 let authInitialized = false;
 let authSubscription: { unsubscribe: () => void } | null = null;
+let authInitializationPromise: Promise<void> | null = null;
+
+const clearAuthLoadingState = () => {
+  useAuthStore.getState().hydrate({
+    user: null,
+    profile: null,
+    session: null,
+    authStage: 'signed_out',
+    pendingLoginChallenge: null,
+    loading: false,
+  });
+};
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
   const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
@@ -95,21 +107,35 @@ const hydrateAuthState = async (session: Session | null) => {
 };
 
 const initializeAuth = async () => {
+  if (authInitializationPromise) return authInitializationPromise;
   if (authInitialized) return;
   authInitialized = true;
 
-  useAuthStore.getState().setLoading(true);
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  await hydrateAuthState(session);
+  authInitializationPromise = (async () => {
+    useAuthStore.getState().setLoading(true);
 
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-    await hydrateAuthState(nextSession);
-  });
-  authSubscription = subscription;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      await hydrateAuthState(session);
+    } catch {
+      clearAuthLoadingState();
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      window.setTimeout(() => {
+        void hydrateAuthState(nextSession).catch(() => {
+          useAuthStore.getState().setLoading(false);
+        });
+      }, 0);
+    });
+    authSubscription = subscription;
+  })();
+
+  await authInitializationPromise;
 };
 
 export const useAuth = () => {

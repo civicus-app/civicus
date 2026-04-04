@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   BarChart3,
   FileStack,
+  Languages,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -55,7 +56,7 @@ export default function AdminLayout() {
       <div className="flex min-h-screen">
         <aside
           className={cn(
-            'fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-[#d8e2ef] bg-white px-5 py-5 shadow-[0_20px_60px_rgba(40,73,118,0.08)] transition-transform md:static md:translate-x-0',
+            'fixed inset-y-0 left-0 z-50 flex w-[min(88vw,280px)] flex-col border-r border-[#d8e2ef] bg-white px-4 py-4 shadow-[0_20px_60px_rgba(40,73,118,0.08)] transition-transform md:static md:w-[280px] md:translate-x-0 md:px-5 md:py-5',
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           )}
         >
@@ -94,6 +95,13 @@ export default function AdminLayout() {
             </div>
           </div>
 
+          <div className="mt-6 flex items-center gap-3 rounded-2xl border border-[#d8e2ef] bg-white px-4 py-3">
+            <Languages className="h-4 w-4 text-[#365476]" />
+            <div className="flex-1">
+              <LanguageToggle className="w-full shadow-none border-0 bg-transparent p-0" />
+            </div>
+          </div>
+
           <nav className="mt-6 space-y-1.5">
             {navItems.map(({ to, icon: Icon, labelNo, labelEn }) => {
               const active = location.pathname === to || (to !== '/admin' && location.pathname.startsWith(to));
@@ -117,7 +125,6 @@ export default function AdminLayout() {
           </nav>
 
           <div className="mt-auto space-y-3 pt-6">
-            <LanguageToggle className="inline-flex shadow-none" />
             <button
               onClick={handleSignOut}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d8e2ef] px-4 py-3 text-sm font-medium text-[#365476] transition-colors hover:bg-[#eef3f8]"
@@ -137,7 +144,7 @@ export default function AdminLayout() {
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-[#d8e2ef] bg-white/90 px-4 py-4 backdrop-blur md:px-8">
+          <header className="sticky top-0 z-30 border-b border-[#d8e2ef] bg-white/90 px-3 py-3 backdrop-blur sm:px-4 sm:py-4 md:px-8">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <button
@@ -152,7 +159,7 @@ export default function AdminLayout() {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6b7f99]">
                     {tx('Adminarbeidsflate', 'Admin workspace')}
                   </p>
-                  <h1 className="text-xl font-semibold text-[#173151]">
+                  <h1 className="text-lg font-semibold text-[#173151] sm:text-xl">
                     {navItems.find((item) => location.pathname === item.to || (item.to !== '/admin' && location.pathname.startsWith(item.to)))?.[
                       language === 'en' ? 'labelEn' : 'labelNo'
                     ] || tx('Oversikt', 'Dashboard')}
@@ -160,24 +167,40 @@ export default function AdminLayout() {
                 </div>
               </div>
 
-              <div className="hidden md:flex items-center gap-3 rounded-full border border-[#d8e2ef] bg-white px-3 py-2 shadow-sm">
-                <span className="text-xs font-medium uppercase tracking-[0.2em] text-[#6b7f99]">
-                  {tx('Periode', 'Period')}
-                </span>
-                <select
-                  value={timePeriod}
-                  onChange={(event) => setTimePeriod(event.target.value)}
-                  className="bg-transparent text-sm font-medium text-[#173151] focus:outline-none"
-                >
-                  <option value="7d">{tx('7 dager', '7 days')}</option>
-                  <option value="30d">{tx('30 dager', '30 days')}</option>
-                  <option value="90d">{tx('90 dager', '90 days')}</option>
-                </select>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="md:hidden flex items-center gap-2">
+                  <div className="hidden min-[360px]:block">
+                    <select
+                      value={timePeriod}
+                      onChange={(event) => setTimePeriod(event.target.value)}
+                      className="h-9 rounded-full border border-[#d8e2ef] bg-white px-3 text-xs font-medium text-[#173151]"
+                    >
+                      <option value="7d">7d</option>
+                      <option value="30d">30d</option>
+                      <option value="90d">90d</option>
+                    </select>
+                  </div>
+                  <LanguageToggle className="shadow-none" />
+                </div>
+                <div className="hidden md:flex items-center gap-3 rounded-full border border-[#d8e2ef] bg-white px-3 py-2 shadow-sm">
+                  <span className="text-xs font-medium uppercase tracking-[0.2em] text-[#6b7f99]">
+                    {tx('Periode', 'Period')}
+                  </span>
+                  <select
+                    value={timePeriod}
+                    onChange={(event) => setTimePeriod(event.target.value)}
+                    className="bg-transparent text-sm font-medium text-[#173151] focus:outline-none"
+                  >
+                    <option value="7d">{tx('7 dager', '7 days')}</option>
+                    <option value="30d">{tx('30 dager', '30 days')}</option>
+                    <option value="90d">{tx('90 dager', '90 days')}</option>
+                  </select>
+                </div>
               </div>
             </div>
           </header>
 
-          <main className="flex-1 px-4 py-5 md:px-8 md:py-8">
+          <main className="flex-1 px-3 py-4 sm:px-4 sm:py-5 md:px-8 md:py-8">
             <Outlet context={{ timePeriod, setTimePeriod }} />
           </main>
         </div>

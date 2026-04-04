@@ -69,7 +69,14 @@ export default function ResetPassword() {
         </Link>
       }
     >
-      {success ? null : (
+      {success ? (
+        <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm leading-6 text-emerald-800">
+          {tx(
+            'Lenken er sendt. Åpne e-posten din og følg instruksjonene for å velge et nytt passord.',
+            'The link has been sent. Open your email and follow the instructions to choose a new password.'
+          )}
+        </div>
+      ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error ? (
             <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

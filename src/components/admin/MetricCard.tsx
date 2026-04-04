@@ -28,32 +28,30 @@ export default function MetricCard({
       className={`overflow-hidden rounded-[18px] border border-[#dbe3ec] bg-white shadow-[0_8px_22px_rgba(24,49,81,0.045)] ${className}`}
     >
       <CardContent
-        className={`p-2.5 ${tone === 'soft' ? 'bg-[linear-gradient(180deg,#ffffff_0%,#f8fbfd_100%)]' : ''}`}
+        className={`p-4 ${tone === 'soft' ? 'bg-[linear-gradient(180deg,#ffffff_0%,#f8fbfd_100%)]' : ''}`}
       >
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#7388a2]">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7388a2]">
             {title}
-          </p>
+          </span>
           {icon ? (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-[#e2e9f1] bg-[#f7fafd] text-[#547292]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e2e9f1] bg-[#f7fafd] text-[#547292] shadow-sm">
               {icon}
             </div>
           ) : null}
         </div>
-
-        <div className="mt-1.5 flex items-end justify-between gap-2">
+        <div className="flex items-end justify-between gap-2">
           <div className="min-w-0 flex-1">
             {isText ? (
-              <p className="text-[13px] leading-tight font-semibold text-[#173151] break-words sm:text-sm">
+              <span className="text-[1.1rem] leading-tight font-bold text-[#173151] break-words sm:text-[1.2rem]">
                 {value}
-              </p>
+              </span>
             ) : (
-              <p className="text-[1.1rem] leading-none font-semibold tracking-[-0.05em] text-[#173151] tabular-nums sm:text-[1.2rem]">
+              <span className="text-[2.1rem] leading-none font-extrabold tracking-[-0.05em] text-[#173151] tabular-nums">
                 {value}
-              </p>
+              </span>
             )}
           </div>
-
           {change !== undefined && (
             <div
               className={`pb-0.5 shrink-0 flex items-center font-semibold ${
@@ -65,14 +63,14 @@ export default function MetricCard({
               ) : (
                 <TrendingDown className="mr-1 h-3 w-3" />
               )}
-              <span className="text-[9px] leading-none whitespace-nowrap">
+              <span className="text-[10px] leading-none whitespace-nowrap">
                 {change > 0 ? `+${change}` : change}%
               </span>
             </div>
           )}
         </div>
         {label && (
-          <div className="mt-1.5 inline-flex rounded-full border border-[#e1e8f0] bg-[#f5f8fb] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#4e6a90]">
+          <div className="mt-2 inline-flex rounded-full border border-[#e1e8f0] bg-[#f5f8fb] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4e6a90]">
             {label}
           </div>
         )}

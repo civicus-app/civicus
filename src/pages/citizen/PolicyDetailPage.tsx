@@ -105,14 +105,14 @@ export default function PolicyDetailPage() {
       : tx('Utkast', 'Draft');
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <Link to="/policies" className="inline-flex items-center text-sm text-gray-600 hover:text-primary-600">
         <ArrowLeft className="h-4 w-4 mr-1" /> {tx('Tilbake til saker', 'Back to policies')}
       </Link>
 
       {/* Policy Header */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <Badge variant={policy.status as 'active' | 'under_review' | 'closed' | 'draft'} className="text-sm px-3 py-1">
               {localizedStatus}
@@ -125,7 +125,7 @@ export default function PolicyDetailPage() {
             )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{getPolicyTitle(policy, language)}</h1>
-          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
+          <div className="mb-6 flex flex-col gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap sm:gap-4">
             <div className="flex items-center space-x-1">
               <Calendar className="h-4 w-4" />
               <span>{tx('Startet', 'Started')}: {formatDate(policy.start_date)}</span>
@@ -145,13 +145,13 @@ export default function PolicyDetailPage() {
             <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{getPolicyDescription(policy, language)}</p>
           </div>
           {user ? (
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Button variant="outline" onClick={toggleFollow} disabled={followLoading}>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button variant="outline" onClick={toggleFollow} disabled={followLoading} className="w-full sm:w-auto">
                 {following ? <BellOff className="h-4 w-4 mr-2" /> : <Bell className="h-4 w-4 mr-2" />}
                 {following ? tx('Folger oppdateringer', 'Following updates') : tx('Folg oppdateringer', 'Follow updates')}
               </Button>
               {policy.topics && policy.topics.length > 0 && (
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="w-full sm:w-auto">
                   <Link to={`/policies/${policy.id}/utforsk`}>
                     <Layers className="h-4 w-4 mr-2" />
                     {tx('Utforsk temaer', 'Explore topics')}
@@ -329,7 +329,7 @@ export default function PolicyDetailPage() {
                 className="min-h-[120px]"
                 maxLength={2000}
               />
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -342,9 +342,9 @@ export default function PolicyDetailPage() {
                     {tx('Send anonymt', 'Submit anonymously')}
                   </label>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-between sm:justify-end sm:space-x-3">
                   <span className="text-xs text-gray-400">{feedbackText.length}/2000</span>
-                  <Button type="submit" size="sm" disabled={submitting || feedbackText.length < 10}>
+                  <Button type="submit" size="sm" disabled={submitting || feedbackText.length < 10} className="sm:w-auto">
                     <Send className="h-4 w-4 mr-2" />
                     {submitting ? tx('Sender...', 'Submitting...') : tx('Send tilbakemelding', 'Submit feedback')}
                   </Button>
@@ -359,13 +359,13 @@ export default function PolicyDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">
-            {tx(`Innbyggerinnspill (${feedback.length})`, `Community feedback (${feedback.length})`)}
+            {tx(`Dine tilbakemeldinger (${feedback.length})`, `Your feedback (${feedback.length})`)}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {feedback.length === 0 ? (
             <p className="text-center text-gray-500 py-6">
-              {tx('Ingen tilbakemeldinger enda. Vaer den forste som deler synspunktet ditt!', 'No feedback yet. Be the first to share your thoughts!')}
+              {tx('Du har ikke sendt tilbakemelding enna.', 'You have not submitted feedback yet.')}
             </p>
           ) : (
             <div className="space-y-4">

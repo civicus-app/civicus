@@ -2,7 +2,9 @@ import { useState, useCallback, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import { Search, Filter, Grid, List } from 'lucide-react';
 import { usePolicies } from '../../hooks/usePolicies';
+import { useUserVotesMap } from '../../hooks/useFeedback';
 import PolicyCard from '../../components/citizen/PolicyCard';
+import PolicyTopicsOverlay from '../../components/citizen/PolicyTopicsOverlay';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -11,6 +13,7 @@ import { debounce } from '../../lib/utils';
 import { useLanguageStore } from '../../store/languageStore';
 import { supabase } from '../../lib/supabase';
 import type { Category } from '../../types';
+import type { Policy } from '../../types/policy.types';
 import { getCategoryLabel } from '../../lib/policyContent';
 
 export default function Policies() {
@@ -23,6 +26,8 @@ export default function Policies() {
   const [page, setPage] = useState(1);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
+  const [voteRefreshKey, setVoteRefreshKey] = useState(0);
 
   const debouncedSetSearch = useCallback(
     debounce((val: unknown) => setDebouncedSearch(val as string), 400),
@@ -54,13 +59,15 @@ export default function Policies() {
   });
 
   const totalPages = Math.ceil(total / 12);
+  const policyIds = policies.map((p) => p.id);
+  const votesMap = useUserVotesMap(policyIds, voteRefreshKey);
 
   return (
     <div className="space-y-4">
-      <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm px-5 py-4">
+      <section>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold text-[#2a4a70]">
+            <h1 className="text-2xl font-semibold text-[#2a4a70] sm:text-3xl">
               {tx('Kommunale saker', 'Municipal policies')}
             </h1>
             <p className="mt-1 text-sm text-[#5b7391]">
@@ -148,7 +155,7 @@ export default function Policies() {
         </div>
       </section>
 
-      <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm p-4 lg:p-5">
+      <section className="bg-white border border-[#d4dde9] rounded-xl shadow-sm p-3 sm:p-4 lg:p-5">
         {loading ? (
           <LoadingSpinner />
         ) : policies.length === 0 ? (
@@ -162,20 +169,27 @@ export default function Policies() {
             <div
               className={
                 view === 'grid'
-                  ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4'
+                  ? 'grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4'
                   : 'space-y-3'
               }
             >
               {policies.map((policy) => (
-                <PolicyCard key={policy.id} policy={policy} />
+                <PolicyCard
+                  key={policy.id}
+                  policy={policy}
+                  onSelect={setSelectedPolicy}
+                  showVoteStatus
+                  refreshKey={voteRefreshKey}
+                  preloadedVote={votesMap[policy.id] ?? null}
+                />
               ))}
             </div>
             {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-2 mt-8">
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:space-x-2 sm:gap-0">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-4 py-2 text-sm border border-[#ccd8e8] rounded-md disabled:opacity-50 hover:bg-[#f3f7fc] text-[#2f4f72]"
+                  className="w-full rounded-md border border-[#ccd8e8] px-4 py-2 text-sm text-[#2f4f72] disabled:opacity-50 hover:bg-[#f3f7fc] sm:w-auto"
                 >
                   {tx('Forrige', 'Previous')}
                 </button>
@@ -185,7 +199,7 @@ export default function Policies() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-4 py-2 text-sm border border-[#ccd8e8] rounded-md disabled:opacity-50 hover:bg-[#f3f7fc] text-[#2f4f72]"
+                  className="w-full rounded-md border border-[#ccd8e8] px-4 py-2 text-sm text-[#2f4f72] disabled:opacity-50 hover:bg-[#f3f7fc] sm:w-auto"
                 >
                   {tx('Neste', 'Next')}
                 </button>
@@ -194,6 +208,14 @@ export default function Policies() {
           </>
         )}
       </section>
+      {selectedPolicy ? (
+        <PolicyTopicsOverlay
+          policy={selectedPolicy}
+          open={Boolean(selectedPolicy)}
+          onClose={() => setSelectedPolicy(null)}
+          onVoteSubmitted={() => setVoteRefreshKey((prev) => prev + 1)}
+        />
+      ) : null}
     </div>
   );
 }

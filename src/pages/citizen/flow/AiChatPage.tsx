@@ -57,25 +57,34 @@ export default function AiChatPage() {
 
   return (
     <CivicusMobileShell compact>
-      <div className="space-y-4 pb-24">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-[#168ec2]">CIVICUS AI</h2>
-          <button onClick={() => navigate(-1)} className="text-[#2a89bc]" aria-label={tx('Lukk', 'Close')}>
+      <div className="space-y-5 pb-24">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
+            aria-label={tx('Lukk', 'Close')}
+          >
             <X className="h-5 w-5" />
+            {tx('Lukk AI-hjelp', 'Close AI help')}
           </button>
+          <div className="space-y-1 text-left sm:text-right">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">CIVICUS AI</p>
+            <h2 className="text-xl font-bold text-slate-950 sm:text-2xl">{getTopicLabel(topic, language, policy?.topics)}</h2>
+            <p className="text-sm text-slate-500">
+              {tx('Styrket forklaring pa valgt tema', 'Enhanced guidance for your chosen topic')}
+            </p>
+          </div>
         </div>
 
-        <article className="rounded-[22px] bg-[#28bad7] px-4 py-4 shadow">
-          <div className="mb-3 border-b border-[#0f6a89]/35 pb-2 text-right text-[#1b6388]">x</div>
-
-          <div className="space-y-3">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="space-y-4">
             {messages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
                 className={
                   message.role === 'assistant'
-                    ? 'max-w-[84%] rounded-[18px] bg-[#f0f0f0] px-4 py-3 text-sm text-[#2f2f2f]'
-                    : 'ml-auto max-w-[84%] rounded-[18px] bg-[#2187b6] px-4 py-3 text-sm text-white'
+                    ? 'rounded-[26px] border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-900 shadow-sm'
+                    : 'ml-auto max-w-[92%] rounded-[26px] bg-sky-700 px-4 py-3 text-sm text-white shadow-sm sm:max-w-[84%]'
                 }
               >
                 {message.content}
@@ -83,23 +92,23 @@ export default function AiChatPage() {
             ))}
 
             {sending ? (
-              <div className="inline-flex items-center gap-2 rounded-[18px] bg-[#f0f0f0] px-4 py-2 text-sm text-[#4c4c4c]">
-                <Bot className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2 rounded-[26px] bg-slate-100 px-4 py-3 text-sm text-slate-700">
+                <Bot className="h-4 w-4 text-slate-700" />
                 {tx('Skriver svar...', 'Writing...')}
               </div>
             ) : null}
           </div>
 
-          <form onSubmit={onSubmit} className="mt-4 flex items-center gap-2 rounded-full bg-white px-3 py-2">
+          <form onSubmit={onSubmit} className="mt-5 flex items-center gap-2 rounded-[24px] border border-slate-200 bg-slate-50 p-2">
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder={tx('Skriv en melding...', 'Write a message...')}
-              className="w-full bg-transparent text-sm text-[#333] outline-none"
+              placeholder={tx('Spors maler, for eksempel: Kva betyr dette for oss?', 'Ask something like: What does this mean for us?')}
+              className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
             />
             <button
               type="submit"
-              className="grid h-7 w-7 place-items-center rounded-full bg-[#5c72ff] text-white disabled:opacity-60"
+              className="grid h-10 w-10 place-items-center rounded-full bg-sky-700 text-white disabled:opacity-50"
               disabled={sending || !input.trim()}
               aria-label={tx('Send', 'Send')}
             >
@@ -110,9 +119,9 @@ export default function AiChatPage() {
 
         <Link
           to={`/policies/${id}/topic/${topic}/utdrag`}
-          className="block w-full rounded-2xl bg-[#168ec2] px-4 py-3 text-center text-base font-semibold text-white"
+          className="block w-full rounded-3xl bg-sky-700 px-4 py-4 text-center text-base font-semibold text-white shadow-md shadow-sky-200/40 transition hover:bg-sky-600"
         >
-          {tx('Neste: Se utdrag', 'Next: View extract')}
+          {tx('Neste: Se PDF-seksjon', 'Next: View PDF section')}
         </Link>
       </div>
     </CivicusMobileShell>

@@ -17,12 +17,19 @@ export const usePolicies = (options: UsePoliciesOptions = {}) => {
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
 
-  const fetchPolicies = useCallback(async () => {
+  const fetchPolicies = useCallback(async (signal?: { cancelled: boolean }) => {
+    setLoading(true);
+    const timeout = setTimeout(() => {
+      if (signal && !signal.cancelled) {
+        signal.cancelled = true;
+        setLoading(false);
+        setError('Request timed out');
+      }
+    }, 10000);
     try {
-      setLoading(true);
       let query = supabase
         .from('policies')
-        .select('*, categories(*)', { count: 'exact' });
+        .select('*, categories(*), policy_topics(*)', { count: 'exact' });
 
       if (options.status && options.status !== 'all') {
         query = query.eq('status', options.status);
@@ -32,56 +39,58 @@ export const usePolicies = (options: UsePoliciesOptions = {}) => {
 
       query = query.eq('is_published', true);
 
+      const limit = options.limit || 12;
+      const page = options.page || 1;
+      const from = (page - 1) * limit;
+
       if (options.category) {
         const { data: cat } = await supabase
           .from('categories')
           .select('id')
           .eq('name', options.category)
           .single();
+        if (signal?.cancelled) { clearTimeout(timeout); return; }
         if (cat) query = query.eq('category_id', cat.id);
       }
 
-      if (!options.search) {
-        const limit = options.limit || 12;
-        const page = options.page || 1;
-        const from = (page - 1) * limit;
-        query = query.range(from, from + limit - 1);
-      } else {
-        query = query.limit(250);
+      if (options.search) {
+        const needle = options.search.trim().replace(/[%_]/g, '\\$&');
+        query = query.or(
+          `title.ilike.%${needle}%,title_no.ilike.%${needle}%,title_en.ilike.%${needle}%,description.ilike.%${needle}%,description_no.ilike.%${needle}%,description_en.ilike.%${needle}%`
+        );
       }
-      query = query.order('created_at', { ascending: false });
+
+      query = query.order('created_at', { ascending: false }).range(from, from + limit - 1);
 
       const { data, error, count } = await query;
+      clearTimeout(timeout);
+      if (signal?.cancelled) return;
       if (error) throw error;
       const normalized = ((data as any[]) || []).map((policy) => ({
         ...policy,
         category: policy.category || policy.categories || null,
+        topics: ((policy.topics || policy.policy_topics || []) as any[]).sort(
+          (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)
+        ),
       }));
-      let visiblePolicies = normalized.filter((policy) => isCitizenVisiblePolicy(policy as Policy));
-      if (options.search) {
-        const needle = options.search.trim().toLowerCase();
-        visiblePolicies = visiblePolicies.filter((policy) =>
-          [policy.title, policy.title_no, policy.title_en, policy.description, policy.description_no, policy.description_en]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(needle))
-        );
-        const limit = options.limit || 12;
-        const page = options.page || 1;
-        const from = (page - 1) * limit;
-        setPolicies(visiblePolicies.slice(from, from + limit) as Policy[]);
-        setTotal(visiblePolicies.length);
-      } else {
-        setPolicies(visiblePolicies as Policy[]);
-        setTotal(count || visiblePolicies.length);
-      }
+      const visiblePolicies = normalized.filter((policy) => isCitizenVisiblePolicy(policy as Policy));
+      setPolicies(visiblePolicies as Policy[]);
+      setTotal(count || visiblePolicies.length);
+      setError(null);
     } catch (err) {
+      clearTimeout(timeout);
+      if (signal?.cancelled) return;
       setError(err instanceof Error ? err.message : 'Failed to fetch policies');
     } finally {
-      setLoading(false);
+      if (!signal?.cancelled) setLoading(false);
     }
   }, [options.status, options.category, options.search, options.limit, options.page]);
 
-  useEffect(() => { fetchPolicies(); }, [fetchPolicies]);
+  useEffect(() => {
+    const signal = { cancelled: false };
+    void fetchPolicies(signal);
+    return () => { signal.cancelled = true; };
+  }, [fetchPolicies]);
 
   return { policies, loading, error, total, refetch: fetchPolicies };
 };

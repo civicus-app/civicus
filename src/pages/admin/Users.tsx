@@ -183,7 +183,65 @@ export default function Users() {
         <LoadingSpinner />
       ) : (
         <div className="overflow-hidden rounded-[28px] border border-[#d7dfeb] bg-white">
-          <div className="overflow-x-auto">
+          <div className="divide-y divide-[#ebf0f6] md:hidden">
+            {filteredUsers.map((user) => {
+              const isCurrentUser = user.id === currentProfile?.id;
+              return (
+                <article key={user.id} className="space-y-4 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium text-[#173151]">{user.full_name}</div>
+                      <div className="mt-1 break-all text-sm text-[#4e6482]">{user.email}</div>
+                      {isCurrentUser ? (
+                        <p className="mt-1 text-xs text-[#6b7f99]">{tx('Din konto', 'Your account')}</p>
+                      ) : null}
+                    </div>
+                    <span
+                      className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${roleBadgeClasses[user.role] || 'bg-slate-100 text-slate-700'}`}
+                    >
+                      {roleLabel(user.role)}
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-[#6b7f99]">
+                    {tx('Opprettet', 'Created')}: {formatDate(user.created_at)}
+                  </div>
+
+                  <div>
+                    {user.role === 'citizen' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-full"
+                        disabled={savingUserId === user.id}
+                        onClick={() => changeRole(user, 'admin')}
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        {tx('Gjor admin', 'Promote')}
+                      </Button>
+                    ) : user.role === 'admin' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-full"
+                        disabled={savingUserId === user.id || isCurrentUser}
+                        onClick={() => changeRole(user, 'citizen')}
+                      >
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        {tx('Gjor innbygger', 'Demote')}
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-[#6b7f99]">
+                        {tx('Superadmin styres manuelt', 'Super admin is managed manually')}
+                      </p>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead className="border-b bg-[#f7f9fc]">
                 <tr>

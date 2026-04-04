@@ -46,16 +46,3 @@ export const getAuthSessionId = (session: Session | null | undefined): string | 
   const sessionId = jwtPayload?.session_id;
   return typeof sessionId === 'string' && sessionId ? sessionId : null;
 };
-
-export const isAdmin = async (): Promise<boolean> => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-  return !!profile && (profile.role === 'admin' || profile.role === 'super_admin');
-};

@@ -23,6 +23,15 @@ const getFillColor = (metric?: AdminDistrictMetric) => {
   return '#d8e4ef';
 };
 
+const getBorderColor = (metric?: AdminDistrictMetric, isSelected?: boolean) => {
+  if (isSelected) return '#1a365d';
+  const total = metric?.participants || 0;
+  if (total >= 30) return '#0a5a57';
+  if (total >= 15) return '#2d6b68';
+  if (total >= 1) return '#4a7c79';
+  return '#6b7d95';
+};
+
 export default function DistrictGeoMap({
   districts,
   metrics = [],
@@ -47,10 +56,13 @@ export default function DistrictGeoMap({
       zoomControl: false,
       scrollWheelZoom: false,
       dragging: true,
+      zoomAnimation: true,
+      fadeAnimation: true,
     }).setView(BASE_CENTER, 10);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
+      opacity: 0.8,
     }).addTo(map);
 
     mapRef.current = map;
@@ -81,12 +93,30 @@ export default function DistrictGeoMap({
 
       const geoJsonLayer = L.geoJSON(feature as GeoJSON.GeoJsonObject, {
         style: {
-          color: isSelected ? '#194b93' : '#6a84a5',
-          weight: isSelected ? 3 : 1.5,
+          color: getBorderColor(metric, isSelected),
+          weight: isSelected ? 4 : 2.5,
+          opacity: 0.9,
           fillColor: isSelected ? '#3b79c9' : getFillColor(metric),
-          fillOpacity: isSelected ? 0.5 : 0.75,
+          fillOpacity: isSelected ? 0.6 : 0.8,
+          dashArray: isSelected ? null : '1, 2',
         },
         onEachFeature: (_, layer) => {
+          // Add hover effects
+          layer.on('mouseover', function() {
+            this.setStyle({
+              weight: 4,
+              color: '#1a365d',
+              fillOpacity: 0.9,
+            });
+          });
+          layer.on('mouseout', function() {
+            this.setStyle({
+              weight: isSelected ? 4 : 2.5,
+              color: getBorderColor(metric, isSelected),
+              fillOpacity: isSelected ? 0.6 : 0.8,
+            });
+          });
+
           const popupLines = [
             `<strong>${district.name}</strong>`,
             metric ? `Participants: ${metric.participants}` : null,
@@ -114,5 +144,5 @@ export default function DistrictGeoMap({
     }
   }, [districts, metricsByDistrict, onToggleDistrict, readOnly, selectedDistrictIds]);
 
-  return <div ref={containerRef} className={`overflow-hidden rounded-2xl border border-[#d7dfeb] ${heightClassName}`} />;
+  return <div ref={containerRef} className={`overflow-hidden rounded-2xl border-2 border-[#e1e8f0] shadow-lg bg-white ${heightClassName}`} />;
 }

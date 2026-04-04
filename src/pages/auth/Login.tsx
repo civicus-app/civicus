@@ -220,7 +220,7 @@ export default function Login() {
             </p>
           ) : null}
 
-          <div className="rounded-2xl border border-[#d8e0ee] bg-[#f8fbff] px-4 py-3 text-sm text-[#4f607a]">
+          <div className="rounded-[24px] border border-[#d8e0ee] bg-[linear-gradient(180deg,#f8fbff_0%,#eef6ff_100%)] px-4 py-4 text-sm text-[#4f607a]">
             <p className="font-medium text-[#24354c]">{profile?.email || pendingLoginChallenge?.email}</p>
             <p className="mt-1">
               {tx(
@@ -251,7 +251,7 @@ export default function Login() {
           </div>
 
           {canTrustDevice ? (
-            <label className="flex items-start gap-3 rounded-2xl border border-[#d8e0ee] bg-[#fbfcfe] px-4 py-3 text-sm text-[#526277]">
+            <label className="flex items-start gap-3 rounded-[24px] border border-[#d8e0ee] bg-[#fbfcfe] px-4 py-3 text-sm text-[#526277]">
               <input
                 type="checkbox"
                 checked={rememberDevice}
@@ -325,7 +325,7 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-5 text-center text-sm">
+          <div className="mt-5 rounded-[22px] border border-[#e3e9f2] bg-[#f8fbfe] px-4 py-3 text-center text-sm text-[#5d6d83]">
             <Link to="/reset-password" className="font-medium text-[#1c6ea4] hover:underline">
               {tx('Glemt passord?', 'Forgot password?')}
             </Link>

@@ -44,8 +44,15 @@ export const useAdminPolicies = (options: AdminPoliciesOptions = {}) => {
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
 
-  const fetchPolicies = useCallback(async () => {
+  const fetchPolicies = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
+    const timeoutId = setTimeout(() => {
+      if (signal && !signal.cancelled) {
+        signal.cancelled = true;
+        setLoading(false);
+        setError('Request timed out');
+      }
+    }, 10000);
     try {
       let query = supabase.from('policies').select('*, categories(*)', { count: 'exact' });
 
@@ -56,57 +63,50 @@ export const useAdminPolicies = (options: AdminPoliciesOptions = {}) => {
 
       const limit = options.limit || 20;
       const page = options.page || 1;
-      if (!options.search) {
-        const from = (page - 1) * limit;
-        query = query.range(from, from + limit - 1);
-      } else {
-        query = query.limit(250);
+      const from = (page - 1) * limit;
+
+      if (options.search) {
+        const needle = options.search.trim().replace(/[%_]/g, '\\$&');
+        query = query.or(
+          `title.ilike.%${needle}%,title_no.ilike.%${needle}%,title_en.ilike.%${needle}%,description.ilike.%${needle}%,description_no.ilike.%${needle}%,description_en.ilike.%${needle}%`
+        );
       }
-      query = query.order('updated_at', { ascending: false });
+
+      query = query.order('updated_at', { ascending: false }).range(from, from + limit - 1);
 
       const { data, count, error: queryError } = await query;
+      clearTimeout(timeoutId);
+      if (signal?.cancelled) return;
       if (queryError) throw queryError;
 
-      let normalized = ((data || []) as any[]).map(normalizePolicy);
-      if (options.search) {
-        const needle = options.search.trim().toLowerCase();
-        normalized = normalized.filter((policy) =>
-          [
-            policy.title,
-            policy.title_no,
-            policy.title_en,
-            policy.description,
-            policy.description_no,
-            policy.description_en,
-            policy.category?.name,
-            policy.category?.label_no,
-            policy.category?.label_en,
-          ]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(needle))
-        );
-        const from = (page - 1) * limit;
-        setPolicies(normalized.slice(from, from + limit));
-        setTotal(normalized.length);
-      } else {
-        setPolicies(normalized);
-        setTotal(count || 0);
-      }
+      const normalized = ((data || []) as any[]).map(normalizePolicy);
+      setPolicies(normalized);
+      setTotal(count || 0);
       setError(null);
     } catch (err) {
+      clearTimeout(timeoutId);
+      if (signal?.cancelled) return;
       setPolicies([]);
       setTotal(0);
       setError(err instanceof Error ? err.message : 'Failed to load admin policies');
     } finally {
-      setLoading(false);
+      if (!signal?.cancelled) setLoading(false);
     }
   }, [options.categoryId, options.limit, options.page, options.published, options.search, options.status]);
 
-  useEffect(() => {
-    void fetchPolicies();
+  const deletePolicy = useCallback(async (policyId: string) => {
+    const { error: rpcError } = await supabase.rpc('admin_delete_policy_workspace', { policy_id: policyId });
+    if (rpcError) throw rpcError;
+    await fetchPolicies();
   }, [fetchPolicies]);
 
-  return { policies, total, loading, error, refetch: fetchPolicies };
+  useEffect(() => {
+    const signal = { cancelled: false };
+    void fetchPolicies(signal);
+    return () => { signal.cancelled = true; };
+  }, [fetchPolicies]);
+
+  return { policies, total, loading, error, refetch: fetchPolicies, deletePolicy };
 };
 
 export const useAdminPolicyWorkspace = (policyId?: string) => {
@@ -116,8 +116,15 @@ export const useAdminPolicyWorkspace = (policyId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchWorkspace = useCallback(async () => {
+  const fetchWorkspace = useCallback(async (signal?: { cancelled: boolean }) => {
     setLoading(true);
+    const timeoutId = setTimeout(() => {
+      if (signal && !signal.cancelled) {
+        signal.cancelled = true;
+        setLoading(false);
+        setError('Request timed out');
+      }
+    }, 10000);
     try {
       const [categoriesResponse, districtsResponse, policyResponse] = await Promise.all([
         supabase.from('categories').select('*').order('created_at', { ascending: true }),
@@ -133,6 +140,9 @@ export const useAdminPolicyWorkspace = (policyId?: string) => {
           : Promise.resolve({ data: null, error: null }),
       ]);
 
+      clearTimeout(timeoutId);
+      if (signal?.cancelled) return;
+
       if (categoriesResponse.error) throw categoriesResponse.error;
       if (districtsResponse.error) throw districtsResponse.error;
       if ((policyResponse as any)?.error) throw (policyResponse as any).error;
@@ -142,14 +152,18 @@ export const useAdminPolicyWorkspace = (policyId?: string) => {
       setPolicy((policyResponse as any)?.data ? normalizePolicy((policyResponse as any).data) : null);
       setError(null);
     } catch (err) {
+      clearTimeout(timeoutId);
+      if (signal?.cancelled) return;
       setError(err instanceof Error ? err.message : 'Failed to load policy workspace');
     } finally {
-      setLoading(false);
+      if (!signal?.cancelled) setLoading(false);
     }
   }, [policyId]);
 
   useEffect(() => {
-    void fetchWorkspace();
+    const signal = { cancelled: false };
+    void fetchWorkspace(signal);
+    return () => { signal.cancelled = true; };
   }, [fetchWorkspace]);
 
   const workspace = useMemo<AdminPolicyWorkspace | null>(() => {
